@@ -14,6 +14,22 @@ nothing about what you did yesterday; a habit tracker logs your behaviour but
 knows nothing about your body clock. Holding both lets the app measure **which
 habits actually move your sleep** — the one thing neither half can do alone.
 
+## Getting started
+
+The app opens on a setup card asking for a name and two estimates: roughly when
+you fall asleep and when you wake. That alone is enough to place your body clock
+and produce the full energy schedule — no logging required to get a useful answer.
+
+Habitual timing resolves in this order:
+
+1. the **median** of your last 14 logged nights, once you have any;
+2. the **setup estimate**, before that.
+
+The page says which it is using (masthead, midsleep fact, and the energy card),
+and switches over automatically on your first saved night. Chronotype is marked
+*provisional* until at least two free nights exist, because an alarm hides your
+real phase.
+
 ## What it computes
 
 Every night is keyed to the **morning you woke**, and plotted on an 18:00–12:00
@@ -81,7 +97,7 @@ Estimates from self-reported entries, not a medical device.
 ## Storage
 
 Uses the artifact `db` capability: one document per night at `nights/<YYYY-MM-DD>`,
-plus `settings/prefs` for your sleep need. A document may hold habits with no sleep times yet (tonight's ticks); those are ignored by every statistic until the morning entry completes them. Declaring `db` makes the artifact
+plus `settings/prefs` for your sleep need and `settings/profile` for your name and estimated schedule. A document may hold habits with no sleep times yet (tonight's ticks); those are ignored by every statistic until the morning entry completes them. Declaring `db` makes the artifact
 organisation-internal — it cannot be shared publicly.
 
 Until the first night is saved the page shows a clearly-marked example fortnight,

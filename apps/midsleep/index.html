@@ -278,6 +278,21 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
   .ec-frame{grid-template-columns:24px 1fr}
 }
 @media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+/* ---------- setup & greeting ---------- */
+.greet{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.greet .hi{font-family:var(--f-display);font-size:19px;font-weight:600;line-height:1.2}
+.greet .sched{font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.setup-inner{padding:var(--s5);display:flex;flex-direction:column;gap:var(--s4)}
+.setup-inner h2{font-size:22px}
+.setup-inner .say{font-size:14px;color:var(--ink-2);max-width:60ch}
+.setup-card{border-color:var(--sleep);box-shadow:0 0 0 3px rgba(var(--sleep-rgb),.10), var(--shadow)}
+.en-now{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3);margin:var(--s4) var(--s5) 0;padding:11px 14px;border-radius:8px;background:var(--inset);border:1px solid var(--ring);border-left:3px solid var(--wake)}
+.en-now .nnum{font-family:var(--f-display);font-size:26px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.en-now .nlab{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.en-now .ntext{font-size:13.5px;color:var(--ink-2);flex:1;min-width:180px}
+.en-now .ntext b{color:var(--ink);font-weight:600}
+.src-note{font-size:12px;color:var(--muted);font-style:italic}
+@media (max-width:880px){.greet{text-align:left;align-items:flex-start}}
 </style>
 
 <div class="wrap">
@@ -288,7 +303,40 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
       <h1>Midsleep</h1>
       <p class="lede">Two apps' worth of idea in one: your body clock sets when you will have energy, your habits decide how much. Log both and the page shows you which habits are actually moving your sleep.</p>
     </div>
+    <div class="greet" id="greet" hidden>
+      <div class="hi" id="greet-hi"></div>
+      <div class="sched" id="greet-sched"></div>
+      <button type="button" class="mini-btn" id="edit-sched">Edit schedule</button>
+    </div>
   </header>
+
+  <section class="card setup-card" id="setup" hidden aria-labelledby="setup-h">
+    <form class="setup-inner" id="setup-form" autocomplete="off">
+      <div>
+        <h2 id="setup-h">Start with two estimates</h2>
+        <p class="say">Roughly when you fall asleep and when you wake is enough to place your body clock and work out your peaks, your dip and your wind-down. Logging real nights later sharpens it &mdash; nothing here is locked in.</p>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label for="s-name">Your name</label>
+          <input type="text" id="s-name" maxlength="40" placeholder="What should I call you?">
+        </div>
+        <div class="field">
+          <label for="s-bed">You usually fall asleep around</label>
+          <input type="time" id="s-bed" value="23:00" required>
+        </div>
+        <div class="field">
+          <label for="s-wake">You usually wake around</label>
+          <input type="time" id="s-wake" value="07:00" required>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn">Show my schedule</button>
+        <button type="button" class="btn ghost" id="setup-cancel" hidden>Cancel</button>
+        <span class="form-msg" id="setup-msg"></span>
+      </div>
+    </form>
+  </section>
 
   <div class="notice" id="banner" hidden></div>
 
@@ -298,6 +346,7 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
       <h2 id="en-h">Today's energy</h2>
       <p class="sub">A two-process estimate: sleep pressure building since you woke, against the circadian drive that keeps you up. Anchored to your own wake time and bedtime.</p>
     </div>
+    <div class="en-now" id="en-now" hidden></div>
     <div class="energy-top">
       <div class="pot">
         <div class="cap">Energy potential</div>
@@ -649,14 +698,18 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
     nights: [],      // raw records, newest first (may include habit-only drafts)
     target: 8 * 60,
     example: true,
-    db: null
+    db: null,
+    profile: null    // {name, bedtime, waketime} -- the estimate the page starts from
   };
 
   /* ---------------- statistics ---------------- */
   function stats(){
     var complete = state.nights.filter(function(n){ return n.bedtime && n.waketime; });
-    state.example = complete.length === 0;
-    var all = (complete.length ? complete : exampleCache()).map(derive);
+    state.example = complete.length === 0 && !state.profile;
+    // Once the user has given us their own schedule the examples must go, or the
+    // sample nights would out-vote the estimate they just entered.
+    var source = complete.length ? complete : (state.example ? exampleCache() : []);
+    var all = source.map(derive);
     var recent = all.slice(0, 14);
     var chron = recent.slice().reverse();
     var target = state.target;
@@ -681,6 +734,22 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
 
     var rhrs = recent.map(function(n){ return n.rhr; }).filter(function(v){ return v != null && v > 0; });
 
+    // Habitual timing comes from measured nights when there are any, and from the
+    // setup estimate before that -- so the schedule works from the first minute.
+    var mOnset = recent.length ? median(recent.map(function(n){ return n.onsetW; })) : null;
+    var mWake  = recent.length ? median(recent.map(function(n){ return n.wakeW;  })) : null;
+    var mMid   = recent.length ? mean(mids) : null;
+    var pr = state.profile, eOnset = null, eWake = null;
+    if (pr && pr.bedtime && pr.waketime) {
+      eOnset = toWin(hm(pr.bedtime));
+      eWake = toWin(hm(pr.waketime));
+      if (eWake <= eOnset) eWake += 1440;
+    }
+    var usingNights = mOnset != null;
+    var habOnset = usingNights ? mOnset : eOnset;
+    var habWake  = usingNights ? mWake  : eWake;
+    var avgMid   = usingNights ? mMid   : (eOnset != null ? (eOnset + eWake) / 2 : null);
+
     // Rise-style personalised sleep need: what you take when nothing wakes you
     var needEstimate = free.length >= 3
       ? Math.round(mean(free.map(function(n){ return n.tst; })) / 15) * 15
@@ -691,13 +760,14 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
       last: all[0] || null,
       avgTst: mean(recent.map(function(n){ return n.tst; })),
       avgEff: mean(recent.map(function(n){ return n.eff; })),
-      avgMid: recent.length ? mean(mids) : null,
+      avgMid: avgMid,
       regSd: sd(mids), debt7: debt7, debtSeries: debtSeries,
       msf: msf, msw: msw, msfSc: msfSc,
       socialJetlag: (msf !== null && msw !== null) ? Math.abs(msf - msw) : null,
       freeCount: free.length,
-      habOnset: recent.length ? median(recent.map(function(n){ return n.onsetW; })) : null,
-      habWake: recent.length ? median(recent.map(function(n){ return n.wakeW; })) : null,
+      habOnset: habOnset, habWake: habWake,
+      clockSource: usingNights ? "nights" : (eOnset != null ? "estimate" : null),
+      estOnset: eOnset, estWake: eWake,
       rhrBase: rhrs.length >= 3 ? median(rhrs) : null,
       needEstimate: needEstimate
     };
@@ -803,11 +873,29 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
     var dipSpan  = spanAround(dip,  function(e){ return e <= dip.e + 8; });
     var eveSpan  = spanAround(eve,  function(e){ return e >= eve.e - 8; });
 
+    // On a flat curve the thresholds above can make two windows claim the same
+    // minutes, which reads as a contradiction. Split them at the midpoint between
+    // their centres, and never let a window collapse below half an hour.
+    var lastM = hBed * 60;
+    function tidy(span, centre, lo, hi){
+      var from = clamp(Math.max(span.from, lo), 0, lastM);
+      var to   = clamp(Math.min(span.to, hi), 0, lastM);
+      if (to - from < 30) {
+        from = clamp(centre - 15, 0, lastM);
+        to   = clamp(centre + 15, 0, lastM);
+      }
+      return { from: from, to: to };
+    }
+    var cutPD = (peak.m + dip.m) / 2, cutDE = (dip.m + eve.m) / 2;
+    peakSpan = tidy(peakSpan, peak.m, 0, cutPD);
+    dipSpan  = tidy(dipSpan,  dip.m, cutPD, cutDE);
+    eveSpan  = tidy(eveSpan,  eve.m, cutDE, lastM);
+
     var potential = pts.reduce(function(a, b){ return b.e > a.e ? b : a; }).e;
     var toClock = function(m){ return (wakeClock + m) % 1440; };
 
     return {
-      pts: pts, hBed: hBed, wakeClock: wakeClock, bedClock: bedClock,
+      pts: pts, hBed: hBed, wakeClock: wakeClock, bedClock: bedClock, S0: S0,
       potential: Math.round(potential),
       toClock: toClock,
       peak: peak, dip: dip, eve: eve,
@@ -843,8 +931,9 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
 
     if (!M) {
       $("en-pot").textContent = "--";
-      $("en-verdict").textContent = "No data yet";
-      $("en-why").textContent = "Log a night to model your day.";
+      $("en-verdict").textContent = "Not set up yet";
+      $("en-why").textContent = "Add roughly when you fall asleep and when you wake, and your whole day is worked out from that.";
+      $("en-now").hidden = true;
       $("en-windows").innerHTML = "";
       svg.innerHTML = "";
       Array.prototype.slice.call(plot.querySelectorAll(".ec-band,.ec-now,.ec-dot")).forEach(function(n){ n.remove(); });
@@ -855,9 +944,11 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
     var b = energyBand(M.potential);
     $("en-pot").textContent = M.potential;
     $("en-verdict").textContent = b.label;
-    $("en-why").textContent = s.debt7 < 30
-      ? "Your debt is clear, so today's ceiling is as high as your schedule allows."
-      : dur(s.debt7) + " of sleep debt is holding today's ceiling down. Clearing it lifts the whole curve.";
+    $("en-why").textContent = s.clockSource === "estimate"
+      ? "Worked out from the times you gave. Log real nights and your sleep debt starts shaping this ceiling too."
+      : s.debt7 < 30
+        ? "Your debt is clear, so today's ceiling is as high as your schedule allows."
+        : dur(s.debt7) + " of sleep debt is holding today's ceiling down. Clearing it lifts the whole curve.";
 
     // ---- the curve ----
     var W = 1000, H = 210;
@@ -924,6 +1015,44 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
       win("eve", "Second wind", M.eveSpan.from, M.eveSpan.to, "Alert again, do not start late work") +
       '<div class="win bed"><div class="wk">Wind down</div><div class="wv">from ' + clock(M.dlmo) +
         '</div><div class="wd">Melatonin rising &middot; lights out ' + clock(M.bedClock) + '</div></div>';
+
+    renderNow(M);
+  }
+
+  function renderNow(M){
+    var host = $("en-now");
+    if (!M) { host.hidden = true; return; }
+    var nm = M.nowM;
+    var name = state.profile && state.profile.name ? state.profile.name : null;
+    var label = 'Right now' + (name ? ", " + escapeHtml(name) : "");
+    host.hidden = false;
+
+    if (nm > M.hBed * 60) {
+      host.innerHTML = '<div><div class="nlab">' + label + '</div><div class="nnum">\u2014</div></div>' +
+        '<div class="ntext">By your own schedule you would normally be <b>asleep</b> by now. ' +
+        'You are due up around <b>' + clock(M.wakeClock) + '</b>.</div>';
+      return;
+    }
+    var e = Math.round(energyAt(nm / 60, M.hBed, M.S0));
+    var inSpan = function(sp){ return nm >= sp.from && nm <= sp.to; };
+    var dlmoM = ((M.dlmo - M.wakeClock + 1440) % 1440);
+    var text;
+    if (nm < 75) {
+      text = "<b>Sleep inertia.</b> Grogginess in the first hour is normal and is not a verdict on your night \u2014 get daylight rather than judging the day by it.";
+    } else if (inSpan(M.peakSpan)) {
+      text = "You are in your <b>morning peak</b>. This is the sharpest you will be today \u2014 spend it on the hardest thing you have.";
+    } else if (inSpan(M.dipSpan)) {
+      text = "You are in your <b>afternoon dip</b>. Daylight and movement clear it faster than caffeine, which at this hour also costs you tonight.";
+    } else if (inSpan(M.eveSpan)) {
+      text = "Your <b>second wind</b>. This is circadian, not recovery \u2014 it is the easiest time to talk yourself into a late night.";
+    } else if (nm >= dlmoM) {
+      text = "<b>Melatonin is rising.</b> Dimming the lights from here makes falling asleep at " + clock(M.bedClock) + " markedly easier.";
+    } else {
+      text = "Between windows. Your peak runs <b>" + clock(M.toClock(M.peakSpan.from)) + "\u2013" +
+             clock(M.toClock(M.peakSpan.to)) + "</b> and the dip follows at <b>" + clock(M.toClock(M.dipSpan.from)) + "</b>.";
+    }
+    host.innerHTML = '<div><div class="nlab">' + label + '</div><div class="nnum">' + e + '</div></div>' +
+      '<div class="ntext">' + text + '</div>';
   }
 
   /* ---------------- recovery ---------------- */
@@ -1304,23 +1433,33 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
   }
   function renderFacts(s, L){
     var out = [];
+    var src = s.clockSource === "nights"
+      ? "averaged over your last " + s.recent.length + " night" + (s.recent.length === 1 ? "" : "s")
+      : "from the schedule you gave";
     out.push('<div class="fact"><div class="k">Midsleep point</div><div class="v"><span class="mono">' + clock(L.mid) + '</span></div>' +
-      '<div class="d">The centre of your biological night, averaged over ' + s.recent.length + ' night' +
-      (s.recent.length === 1 ? '' : 's') + '. Every landmark below is read from it.</div></div>');
+      '<div class="d">The centre of your biological night, ' + src + '. Every landmark below is read from it.</div>' +
+      (s.clockSource === "estimate" ? '<div class="src-note">Logged nights will replace this estimate automatically.</div>' : '') +
+      '</div>');
 
+    var ctMid = null, ctNote = "", provisional = false;
     if (s.msfSc != null && s.freeCount >= 2) {
-      var mc = fromWin(s.msfSc), ct = chronotype(mc);
+      ctMid = fromWin(s.msfSc);
+      ctNote = "Sleep-corrected midsleep on your free days &mdash; the MCTQ measure, taken on nights when nothing woke you.";
+    } else if (s.avgMid != null) {
+      ctMid = fromWin(s.avgMid);
+      provisional = true;
+      ctNote = s.clockSource === "estimate"
+        ? "Provisional, from the times you gave. An alarm hides your real phase, so this sharpens once you log nights you woke naturally."
+        : "Provisional, from your typical midsleep. Tick <em>free day</em> on nights nothing woke you and this becomes the MCTQ free-day measure.";
+    }
+    if (ctMid != null) {
+      var ct = chronotype(ctMid);
       var pin = clamp(((ct.cm - 60) / 360) * 100, 0, 100);
-      out.push('<div class="fact"><div class="k">Chronotype</div><div class="v">' + ct.label +
-        ' <span class="mono" style="color:var(--ink-2)">' + clock(mc) + '</span></div>' +
-        '<div class="d">Sleep-corrected midsleep on your free days &mdash; the MCTQ measure, taken on nights when nothing woke you.</div>' +
+      out.push('<div class="fact"><div class="k">Chronotype' + (provisional ? ' &middot; provisional' : '') + '</div>' +
+        '<div class="v">' + ct.label + ' <span class="mono" style="color:var(--ink-2)">' + clock(ctMid) + '</span></div>' +
+        '<div class="d">' + ctNote + '</div>' +
         '<div class="scale"><div class="scale-track"><div class="scale-pin" style="left:' + pin.toFixed(1) + '%"></div></div>' +
         '<div class="scale-ends"><span>Early &middot; 01:00</span><span>Late &middot; 07:00</span></div></div></div>');
-    } else {
-      var needMore = Math.max(0, 2 - s.freeCount);
-      out.push('<div class="fact"><div class="k">Chronotype</div><div class="v" style="color:var(--muted);font-size:16px">Needs ' +
-        needMore + ' more free night' + (needMore === 1 ? '' : 's') + '</div>' +
-        '<div class="d">Tick <em>free day</em> on nights you woke without an alarm. Only those nights show where your clock actually wants to sit.</div></div>');
     }
 
     if (s.socialJetlag != null) {
@@ -1332,7 +1471,7 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
     }
 
     var reg = Math.round(s.regSd);
-    out.push('<div class="fact"><div class="k">Regularity</div><div class="v"><span class="mono">&plusmn;' + reg + ' min</span> ' +
+    if (s.recent.length >= 3) out.push('<div class="fact"><div class="k">Regularity</div><div class="v"><span class="mono">&plusmn;' + reg + ' min</span> ' +
       '<span class="chip ' + (reg < 30 ? "good" : reg < 60 ? "warn" : "crit") + '"><i class="dot"></i>' +
       (reg < 30 ? "Steady" : reg < 60 ? "Loose" : "Erratic") + '</span></div>' +
       '<div class="d">How far your midsleep wanders night to night. Regularity predicts how you feel at least as well as duration does.</div></div>');
@@ -1383,9 +1522,31 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
     });
   }
 
+  /* ---------------- setup & greeting ---------------- */
+  var setupOpen = false;
+  function renderSetup(){
+    var show = !state.profile || setupOpen;
+    $("setup").hidden = !show;
+    $("setup-cancel").hidden = !state.profile;
+  }
+  function renderGreet(s){
+    var g = $("greet"), pr = state.profile;
+    if (!pr) { g.hidden = true; return; }
+    g.hidden = false;
+    var hour = new Date().getHours();
+    var word = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    $("greet-hi").textContent = pr.name ? word + ", " + pr.name : word;
+    $("greet-sched").textContent = pr.bedtime + " \u2192 " + pr.waketime + " \u00b7 " +
+      (s.clockSource === "nights"
+        ? "measured from " + s.recent.length + " night" + (s.recent.length === 1 ? "" : "s")
+        : "your estimate");
+  }
+
   /* ---------------- render all ---------------- */
   function render(){
     var s = stats(), hs = habitStats(s);
+    renderSetup();
+    renderGreet(s);
     renderEnergy(s);
     renderTiles(s, hs);
     renderRecovery(s);
@@ -1402,6 +1563,9 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
     } else if (!state.db) {
       banner.hidden = false;
       banner.innerHTML = '<b>Not being saved.</b> Storage is unavailable in this view, so anything you add stays only until you close the page.';
+    } else if (s.clockSource === "estimate") {
+      banner.hidden = false;
+      banner.innerHTML = '<b>Running on your estimate.</b> Your peaks, dip and body clock are live below. Log your first night to switch them to measured timing and unlock recovery, the actogram and habit effects.';
     } else {
       banner.hidden = true;
     }
@@ -1472,12 +1636,37 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
         msg("Lost the connection to storage — changes are no longer being saved.", true);
         render();
       });
+      db.doc("settings/profile").onSnapshot(function(snap){
+        if (snap.exists) {
+          var d = snap.data() || {};
+          if (d.bedtime && d.waketime) {
+            state.profile = { name: d.name || "", bedtime: d.bedtime, waketime: d.waketime };
+            setupOpen = false;
+          }
+        }
+        render();
+      }, function(){});
       db.doc("settings/prefs").onSnapshot(function(snap){
         if (!snap.exists) return;
         var t = snap.data().targetMinutes;
         if (typeof t === "number" && t >= 240 && t <= 720) { state.target = t; render(); }
       }, function(){});
     }).catch(function(){ render(); });
+  }
+  function setupMsg(text, isErr){
+    var m = $("setup-msg");
+    m.textContent = text;
+    m.className = "form-msg" + (isErr ? " err" : "");
+    if (text && !isErr) window.setTimeout(function(){ if (m.textContent === text) m.textContent = ""; }, 4000);
+  }
+  function saveProfile(pr){
+    state.profile = pr;
+    setupOpen = false;
+    syncFormToDate();
+    render();
+    if (state.db) state.db.doc("settings/profile").set(pr).catch(function(){
+      setupMsg("Could not save that to storage, but it is applied for this session.", true);
+    });
   }
   function saveTarget(mins){
     state.target = mins;
@@ -1524,8 +1713,33 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
     } else {
       var d = dowIdx(date);
       if (!isNaN(d)) $("f-free").checked = (d === 0 || d === 6);
+      if (state.profile) {
+        $("f-bed").value = state.profile.bedtime;
+        $("f-wake").value = state.profile.waketime;
+      }
     }
   }
+
+  $("setup-form").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var bed = $("s-bed").value, wake = $("s-wake").value;
+    if (!bed || !wake) { setupMsg("Both times are needed.", true); return; }
+    var o = toWin(hm(bed)), w = toWin(hm(wake));
+    if (w <= o) w += 1440;
+    var hrs = (w - o) / 60;
+    if (hrs < 3) { setupMsg("That is under three hours asleep \u2014 check the times.", true); return; }
+    if (hrs > 14) { setupMsg("That is over fourteen hours asleep \u2014 check the times.", true); return; }
+    saveProfile({ name: $("s-name").value.trim().slice(0, 40), bedtime: bed, waketime: wake });
+  });
+  $("edit-sched").addEventListener("click", function(){
+    var pr = state.profile;
+    if (pr) { $("s-name").value = pr.name || ""; $("s-bed").value = pr.bedtime; $("s-wake").value = pr.waketime; }
+    setupOpen = true;
+    render();
+    $("setup").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("s-name").focus();
+  });
+  $("setup-cancel").addEventListener("click", function(){ setupOpen = false; render(); });
 
   $("f-rested").addEventListener("click", function(ev){
     var b = ev.target.closest("button[data-v]");
