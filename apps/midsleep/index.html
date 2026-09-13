@@ -367,6 +367,17 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 .greet-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .person-drop{background:none;border:0;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:4px 6px;border-radius:4px}
 .person-drop:hover{color:var(--crit)}
+/* ---------- download ---------- */
+.dl-body{padding:var(--s4) var(--s5) var(--s5);display:flex;flex-direction:column;gap:var(--s4)}
+.dl-row{display:grid;grid-template-columns:1fr auto;gap:var(--s4);align-items:center;
+  padding:var(--s4);border-radius:9px;background:var(--inset);border:1px solid var(--ring)}
+.dl-text h3{font-size:16px;margin-bottom:4px}
+.dl-text p{font-size:13.5px;color:var(--ink-2);max-width:62ch}
+.dl-actions{display:flex;gap:var(--s2);flex-wrap:wrap}
+.dl-note{font-size:12.5px;color:var(--ink-2);line-height:1.5;padding:11px 13px;border-radius:8px;
+  background:var(--inset);border:1px solid var(--ring);border-left:3px solid var(--sleep)}
+.dl-note b{color:var(--ink)}
+@media (max-width:700px){ .dl-row{grid-template-columns:1fr} }
 </style>
 
 <div class="welcome" id="screen-welcome">
@@ -444,6 +455,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     <button role="tab" id="tab-btn-clock"  aria-controls="tab-clock"  aria-selected="false" data-tab="clock">Body clock</button>
     <button role="tab" id="tab-btn-habits" aria-controls="tab-habits" aria-selected="false" data-tab="habits">Habits</button>
     <button role="tab" id="tab-btn-goals"  aria-controls="tab-goals"  aria-selected="false" data-tab="goals">Goals</button>
+    <button role="tab" id="tab-btn-app"    aria-controls="tab-app"    aria-selected="false" data-tab="app">Download</button>
   </nav>
 
   <div class="notice" id="banner" hidden></div>
@@ -692,6 +704,39 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   </section>
   </div>
 
+  <div class="panel" id="tab-app" role="tabpanel" aria-labelledby="tab-btn-app" hidden>
+  <section class="card" aria-labelledby="app-h">
+    <div class="card-head">
+      <h2 id="app-h">Take it offline</h2>
+      <p class="sub">The whole app is one HTML file. Save it and it runs from your own machine with no account, no internet and nothing to install.</p>
+    </div>
+    <div class="dl-body">
+      <div class="dl-row">
+        <div class="dl-text">
+          <h3>The app, as a file</h3>
+          <p>Everything &mdash; the energy model, the actogram, the body clock, habits and goals &mdash; in a single file of about <span class="mono" id="dl-size">&mdash;</span>. Open it by double-clicking, or put it on a phone home screen from the browser's share menu. It keeps its own diary in whichever browser opens it.</p>
+        </div>
+        <button type="button" class="btn" id="dl-app">Download the app</button>
+      </div>
+
+      <div class="dl-row">
+        <div class="dl-text">
+          <h3>Your diary, as data</h3>
+          <p>Every person, night, habit and goal in one JSON file. Use it to move between this page and an offline copy, or just to keep a backup. Importing adds everyone in the file, replacing any profile it already matches.</p>
+        </div>
+        <div class="dl-actions">
+          <button type="button" class="btn ghost" id="dl-data">Export</button>
+          <button type="button" class="btn ghost" id="dl-import-btn">Import</button>
+          <input type="file" id="dl-import" accept="application/json,.json" hidden>
+        </div>
+      </div>
+
+      <p class="dl-note" id="dl-note"></p>
+      <p class="form-msg" id="dl-msg"></p>
+    </div>
+  </section>
+  </div>
+
   <div class="panel" id="tab-goals" role="tabpanel" aria-labelledby="tab-btn-goals" hidden>
   <!-- ============ GOALS ============ -->
   <section class="card" aria-labelledby="goals-h">
@@ -725,6 +770,12 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 <script>
 (function(){
   "use strict";
+
+  // Grab the served document before rendering touches it: this is what the
+  // "download the app" button hands over, so it must be the pristine source.
+  // External scripts are stripped -- they cannot load from a file:// copy.
+  var SELF_SOURCE = ("<!doctype html>\n" + document.documentElement.outerHTML)
+    .replace(/<script[^>]*\ssrc=["']https?:\/\/[^"']*["'][^>]*><\/script>/gi, "");
 
   var WIN_START = 18 * 60, WIN_LEN = 18 * 60;
 
@@ -839,6 +890,39 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     goals: [],
     demo: false      // looking around with the example fortnight, before signing up
   };
+
+  /* ---------------- local storage ----------------
+     The artifact database only exists inside the claude.ai viewer. A saved copy
+     of this file has no such thing, so everything falls back to localStorage
+     under one blob: same shape as the export format.                         */
+  var LKEY = "midsleep.v1";
+  var localData = { profiles: [], byPid: {} };
+  var localOk = (function(){
+    try { window.localStorage.setItem(LKEY + ".probe", "1"); window.localStorage.removeItem(LKEY + ".probe"); return true; }
+    catch (e) { return false; }
+  })();
+  function localLoad(){
+    try {
+      var raw = window.localStorage.getItem(LKEY);
+      if (raw) localData = JSON.parse(raw);
+    } catch (e) {}
+    if (!localData || typeof localData !== "object") localData = {};
+    if (!Array.isArray(localData.profiles)) localData.profiles = [];
+    if (!localData.byPid || typeof localData.byPid !== "object") localData.byPid = {};
+  }
+  function localWrite(){
+    if (!localOk) return;
+    try { window.localStorage.setItem(LKEY, JSON.stringify(localData)); }
+    catch (e) { localOk = false; render(); }
+  }
+  function localBucket(pid){
+    if (!localData.byPid[pid]) localData.byPid[pid] = { nights: [], goals: [], prefs: {} };
+    var b = localData.byPid[pid];
+    if (!Array.isArray(b.nights)) b.nights = [];
+    if (!Array.isArray(b.goals)) b.goals = [];
+    if (!b.prefs || typeof b.prefs !== "object") b.prefs = {};
+    return b;
+  }
 
   // Every person's data lives under their own document, so switching people
   // swaps the whole subtree rather than filtering a shared one.
@@ -1816,11 +1900,130 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     return isNaN(v) ? null : v;
   }
 
+  /* ---------------- download, export, import ---------------- */
+  function dlMsg(text, isErr){
+    var m = $("dl-msg");
+    m.textContent = text;
+    m.className = "form-msg" + (isErr ? " err" : "");
+    if (text && !isErr) window.setTimeout(function(){ if (m.textContent === text) m.textContent = ""; }, 5000);
+  }
+
+  // Inside the viewer the sandbox blocks a page from downloading anything, so
+  // the platform's downloads capability is the only route. A saved copy has no
+  // such restriction and can hand over a blob itself.
+  function offerFile(filename, text, mime){
+    function viaBlob(){
+      try {
+        var url = URL.createObjectURL(new Blob([text], { type: mime || "text/plain" }));
+        var a = document.createElement("a");
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        window.setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+        dlMsg("Saved " + filename + ".");
+      } catch (e) { dlMsg("This browser would not let the page save a file.", true); }
+    }
+    if (!(window.claude && typeof window.claude.use === "function")) { viaBlob(); return; }
+    window.claude.use("downloads").then(function(dl){
+      if (!dl) { viaBlob(); return; }
+      dl.save({ filename: filename, data: text }).then(function(){
+        dlMsg("Saved " + filename + ".");
+      }).catch(function(e){
+        var c = e && e.code;
+        if (c === "declined") { dlMsg(""); return; }
+        if (c === "rate_limited") { dlMsg("A save prompt is already open. Try again in a moment.", true); return; }
+        if (c === "too_large") { dlMsg("That file is too large for the destination you chose.", true); return; }
+        if (c === "unavailable" || c === "not_granted" || c === "capability_disabled" || c === "capability_removed") { viaBlob(); return; }
+        dlMsg("Could not save the file" + (e && e.message ? ": " + e.message : "."), true);
+      });
+    }).catch(viaBlob);
+  }
+
+  function exportPayload(){
+    var stamp = new Date().toISOString();
+    if (!state.db) {
+      return Promise.resolve({ app: "midsleep", version: 1, exported: stamp,
+        profiles: localData.profiles.slice(),
+        byPid: JSON.parse(JSON.stringify(localData.byPid)) });
+    }
+    var db = state.db;
+    var out = { app: "midsleep", version: 1, exported: stamp, profiles: state.profiles.slice(), byPid: {} };
+    return Promise.all(state.profiles.map(function(pr){
+      var bucket = { nights: [], goals: [], prefs: {} };
+      out.byPid[pr.id] = bucket;
+      return Promise.all([
+        db.collection("profiles/" + pr.id + "/nights").limit(400).get().then(function(ns){
+          bucket.nights = ns.docs.map(function(d){ var v = d.data() || {}; if (!v.date) v.date = d.id; return v; });
+        }),
+        db.collection("profiles/" + pr.id + "/goals").get().then(function(gs){
+          bucket.goals = gs.docs.map(function(d){ var v = d.data() || {}; return { metric: v.metric || d.id, target: +v.target }; });
+        }),
+        db.doc("profiles/" + pr.id + "/prefs/main").get().then(function(ps){
+          bucket.prefs = ps.exists ? (ps.data() || {}) : {};
+        })
+      ]);
+    })).then(function(){ return out; });
+  }
+
+  function importPayload(obj){
+    if (!obj || obj.app !== "midsleep" || !Array.isArray(obj.profiles)) {
+      return Promise.reject(new Error("not an export"));
+    }
+    var byPid = obj.byPid || {};
+    var people = obj.profiles.filter(function(pr){ return pr && pr.id && pr.bedtime && pr.waketime; });
+    if (!people.length) return Promise.reject(new Error("no people"));
+
+    if (!state.db) {
+      people.forEach(function(pr){
+        localData.profiles = localData.profiles.filter(function(x){ return x.id !== pr.id; }).concat([pr]);
+        var b = byPid[pr.id] || {};
+        localData.byPid[pr.id] = {
+          nights: Array.isArray(b.nights) ? b.nights : [],
+          goals: Array.isArray(b.goals) ? b.goals : [],
+          prefs: (b.prefs && typeof b.prefs === "object") ? b.prefs : {}
+        };
+      });
+      localWrite();
+      state.profiles = localData.profiles.slice();
+      syncActiveProfile();
+      if (state.pid) subscribeActive(); else { welcomeMode = "choose"; render(); }
+      return Promise.resolve(people.length);
+    }
+
+    var db = state.db, writes = [];
+    people.forEach(function(pr){
+      writes.push(db.doc("profiles/" + pr.id).set({
+        name: pr.name || "", bedtime: pr.bedtime, waketime: pr.waketime,
+        created: pr.created || new Date().toISOString() }));
+      var b = byPid[pr.id] || {};
+      (b.nights || []).forEach(function(n){
+        if (n && n.date) writes.push(db.doc("profiles/" + pr.id + "/nights/" + n.date).set(n));
+      });
+      (b.goals || []).forEach(function(g){
+        if (g && g.metric) writes.push(db.doc("profiles/" + pr.id + "/goals/" + g.metric).set({ metric: g.metric, target: +g.target }));
+      });
+      if (b.prefs && typeof b.prefs.targetMinutes === "number") {
+        writes.push(db.doc("profiles/" + pr.id + "/prefs/main").set({ targetMinutes: b.prefs.targetMinutes }));
+      }
+    });
+    return Promise.all(writes).then(function(){ return people.length; });
+  }
+
+  function renderDownload(){
+    $("dl-size").textContent = Math.max(1, Math.round(SELF_SOURCE.length / 1024)) + " KB";
+    $("dl-note").innerHTML = state.db
+      ? '<b>Two separate diaries.</b> This page saves to your Claude account; a downloaded copy saves to whichever browser opens it. ' +
+        'They do not sync \u2014 move data across with Export and Import. The offline copy also falls back to system fonts, ' +
+        'because it fetches nothing.'
+      : (localOk
+        ? '<b>Saved in this browser only.</b> Nothing leaves this machine and nothing syncs. Export now and then if the diary matters to you \u2014 clearing site data clears it.'
+        : '<b>This browser is blocking local storage</b>, so nothing can be kept here. Export still works.');
+  }
+
   /* ---------------- setup & greeting ---------------- */
   var setupOpen = false;
   var welcomeMode = "form";   // "choose" when there are people to pick between
   var editingId = null;       // profile being edited, null when creating
-  var TABS = ["today", "sleep", "clock", "habits", "goals"];
+  var TABS = ["today", "sleep", "clock", "habits", "goals", "app"];
   var activeTab = "today";
   try { var saved = localStorage.getItem("midsleep.tab"); if (TABS.indexOf(saved) >= 0) activeTab = saved; } catch (e) {}
 
@@ -1938,6 +2141,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     renderDial(s);
     renderTable(s);
     renderGoals(s);
+    renderDownload();
 
     var banner = $("banner");
     if (state.example) {
@@ -1945,9 +2149,9 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       banner.innerHTML = '<b>Example data, read only.</b> This is someone else\'s fortnight, so you can see how it all reads. ' +
         'Nothing here can be edited or saved. ' +
         '<button type="button" class="link-plain" id="demo-setup">Set up your own schedule</button>';
-    } else if (!state.db) {
+    } else if (!state.db && !localOk) {
       banner.hidden = false;
-      banner.innerHTML = '<b>Not being saved.</b> Storage is unavailable in this view, so anything you add stays only until you close the page.';
+      banner.innerHTML = '<b>Nothing can be saved here.</b> This browser is blocking local storage (a private window, or site data turned off), so anything you add lasts only until you close the page.';
     } else if (s.clockSource === "estimate") {
       banner.hidden = false;
       banner.innerHTML = '<b>Running on your estimate.</b> Your peaks, dip and body clock are live below. Log your first night to switch them to measured timing and unlock recovery, the actogram and habit effects.';
@@ -2018,6 +2222,10 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
           ? "The diary is full. Delete some older nights to make room."
           : "Could not save. " + ((e && e.message) || ""), true);
       });
+    } else {
+      var bk = localBucket(state.pid);
+      bk.nights = bk.nights.filter(function(n){ return n.date !== date; }).concat([rec]);
+      localWrite();
     }
     return rec;
   }
@@ -2026,6 +2234,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     state.nights = state.nights.filter(function(n){ return n.date !== date; });
     render();
     if (state.db) state.db.doc(profilePath() + "/nights/" + date).delete().catch(function(){ msg("Could not delete that night.", true); });
+    else { var bk = localBucket(state.pid); bk.nights = bk.nights.filter(function(n){ return n.date !== date; }); localWrite(); }
   }
 
   var unsubActive = [];
@@ -2040,7 +2249,17 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     state.nights = [];
     state.goals = [];
     state.target = 8 * 60;
-    if (!state.db || !state.pid) { syncFormToDate(); render(); return; }
+    if (!state.db) {
+      if (state.pid) {
+        var bk = localBucket(state.pid);
+        state.nights = bk.nights.slice();
+        state.goals = bk.goals.filter(function(g){ return metricById(g.metric) && isFinite(g.target); });
+        if (typeof bk.prefs.targetMinutes === "number") state.target = bk.prefs.targetMinutes;
+        sortDocs();
+      }
+      syncFormToDate(); render(); return;
+    }
+    if (!state.pid) { syncFormToDate(); render(); return; }
     var db = state.db, forPid = state.pid;
 
     unsubActive.push(db.collection(profilePath() + "/nights").orderBy("date", "desc").limit(400)
@@ -2092,7 +2311,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   function connect(){
     var p = (window.claude && typeof window.claude.use === "function") ? window.claude.use("db") : Promise.resolve(null);
     p.then(function(db){
-      if (!db) { render(); return; }
+      if (!db) { startLocal(); return; }
       state.db = db;
       var first = true;
       cleanupNullProfile(db);
@@ -2119,7 +2338,18 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
         if (state.pid && !state.profile) { welcomeMode = "choose"; subscribeActive(); }
         render();
       }, function(){ render(); });
-    }).catch(function(){ render(); });
+    }).catch(function(){ startLocal(); });
+  }
+
+  function startLocal(){
+    localLoad();
+    state.profiles = localData.profiles.slice();
+    var want = null;
+    try { want = window.localStorage.getItem("midsleep.pid"); } catch (e) {}
+    if (want && state.profiles.some(function(x){ return x.id === want; })) { selectProfile(want); return; }
+    welcomeMode = state.profiles.length ? "choose" : "form";
+    syncActiveProfile();
+    render();
   }
 
   // An earlier build let demo mode write to the literal path "profiles/null".
@@ -2189,6 +2419,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     if (state.db) state.db.doc("profiles/" + id).set(full).catch(function(){
       setupMsg("Could not save that to storage, but it is applied for this session.", true);
     });
+    else { localData.profiles = state.profiles.slice(); localWrite(); }
 
     if (isNew || state.pid !== id) selectProfile(id);
     else { editingId = null; setupOpen = false; syncActiveProfile(); syncFormToDate(); render(); }
@@ -2202,7 +2433,12 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     if (state.pid === id) { state.pid = null; syncActiveProfile(); dropActive(); state.nights = []; state.goals = []; }
     welcomeMode = "choose";
     render();
-    if (!state.db) return;
+    if (!state.db) {
+      delete localData.byPid[id];
+      localData.profiles = state.profiles.slice();
+      localWrite();
+      return;
+    }
     var db = state.db;
     Promise.all([
       db.collection("profiles/" + id + "/nights").limit(400).get().then(function(ns){
@@ -2221,6 +2457,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     state.target = mins;
     render();
     if (state.db && state.pid) state.db.doc(profilePath() + "/prefs/main").set({ targetMinutes: mins }).catch(function(){});
+    else if (state.pid) { localBucket(state.pid).prefs.targetMinutes = mins; localWrite(); }
   }
 
   /* ---------------- form ---------------- */
@@ -2269,6 +2506,33 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       }
     }
   }
+
+  $("dl-app").addEventListener("click", function(){
+    offerFile("midsleep.html", SELF_SOURCE, "text/html");
+  });
+  $("dl-data").addEventListener("click", function(){
+    dlMsg("Gathering your diary\u2026");
+    exportPayload().then(function(o){
+      offerFile("midsleep-data.json", JSON.stringify(o, null, 2), "application/json");
+    }).catch(function(){ dlMsg("Could not gather the data.", true); });
+  });
+  $("dl-import-btn").addEventListener("click", function(){ $("dl-import").click(); });
+  $("dl-import").addEventListener("change", function(){
+    var f = this.files && this.files[0];
+    this.value = "";
+    if (!f) return;
+    var fr = new FileReader();
+    fr.onerror = function(){ dlMsg("Could not read that file.", true); };
+    fr.onload = function(){
+      var obj;
+      try { obj = JSON.parse(String(fr.result)); }
+      catch (e) { dlMsg("That file is not valid JSON.", true); return; }
+      importPayload(obj).then(function(n){
+        dlMsg("Imported " + n + " " + (n === 1 ? "person" : "people") + ".");
+      }).catch(function(){ dlMsg("That does not look like a Midsleep export.", true); });
+    };
+    fr.readAsText(f);
+  });
 
   $("tabs").addEventListener("click", function(ev){
     var b = ev.target.closest("button[data-tab]");
@@ -2340,6 +2604,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     state.goals = state.goals.filter(function(g){ return g.metric !== m.id; }).concat([{ metric: m.id, target: t }]);
     render();
     if (state.db && state.pid) state.db.doc(profilePath() + "/goals/" + m.id).set({ metric: m.id, target: t }).catch(function(){});
+    else if (state.pid) { localBucket(state.pid).goals = state.goals.slice(); localWrite(); }
   });
   $("goals-list").addEventListener("click", function(ev){
     var b = ev.target.closest("button[data-goal]");
@@ -2349,6 +2614,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     state.goals = state.goals.filter(function(g){ return g.metric !== id; });
     render();
     if (state.db && state.pid) state.db.doc(profilePath() + "/goals/" + id).delete().catch(function(){});
+    else if (state.pid) { localBucket(state.pid).goals = state.goals.slice(); localWrite(); }
   });
 
   $("setup-form").addEventListener("submit", function(ev){

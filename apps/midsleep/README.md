@@ -145,9 +145,30 @@ did not log.
 
 Estimates from self-reported entries, not a medical device.
 
+## Offline copy
+
+The **Download** tab hands over the whole app as one HTML file. It is the same
+code: the page captures its own served source at script start, before rendering
+mutates the DOM, and strips external `<script src>` tags that could not load
+from a `file://` copy.
+
+Inside the claude.ai viewer the sandbox blocks a page from downloading anything,
+so the save goes through the platform's `downloads` capability. A saved copy has
+no such restriction and hands over a blob itself; both paths are implemented and
+the capability path falls back to the blob on `unavailable`.
+
+The offline copy has no artifact database, so it persists to `localStorage`
+under one key (`midsleep.v1`), in the same shape as the export format. Verified
+working from both `file://` and `http://`, surviving reload. Google Fonts cannot
+load offline, so the declared fallback stacks take over.
+
+**Export / Import** moves data between the hosted page and an offline copy. The
+two do not sync. Import adds everyone in the file, replacing any profile whose
+id already exists.
+
 ## Storage
 
-Uses the artifact `db` capability, keyed per person:
+Uses the artifact `db` capability inside the viewer, and `localStorage` everywhere else. Keyed per person:
 
     profiles/<pid>                      name, estimated sleep and wake times
     profiles/<pid>/nights/<YYYY-MM-DD>  one document per night
