@@ -1,6 +1,10 @@
 # Publishes apps/midsleep/dist as the site root, so the installable app lives at
-# the repository's Pages URL. configure-pages with enablement:true turns Pages on
-# via the API, so no repository setting has to be changed by hand.
+# the repository's Pages URL.
+#
+# Requires Pages to be switched on once, by a repository admin, with
+# Settings -> Pages -> Source: GitHub Actions. The GITHUB_TOKEN available here
+# can deploy to Pages but cannot create the Pages site itself, so that one step
+# cannot be automated.
 name: Deploy Midsleep
 
 on:
@@ -29,8 +33,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/midsleep/dist
