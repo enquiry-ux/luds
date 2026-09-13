@@ -234,6 +234,8 @@ input:focus-visible,button:focus-visible,.acto-row:focus-visible,.hab:focus-visi
 .btn{font-family:var(--f-ui);font-size:14px;font-weight:600;padding:9px 18px;border-radius:6px;border:1px solid transparent;cursor:pointer;background:var(--sleep);color:#fff}
 .btn.ghost{background:transparent;color:var(--ink-2);border-color:var(--rule)}
 .btn:hover{filter:brightness(1.07)}
+button:disabled{opacity:.45;cursor:not-allowed;filter:none}
+button:disabled:hover{filter:none}
 .form-msg{font-size:13px;color:var(--ink-2)}
 .form-msg.err{color:var(--crit)}
 .divider{height:1px;background:var(--rule);margin:var(--s1) 0}
@@ -383,7 +385,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     </div>
 
     <form class="welcome-form" id="setup-form" autocomplete="off">
-      <h2 class="chooser-h" id="form-h">Start with two estimates</h2>
+      <h2 class="chooser-h" id="setup-h">Start with two estimates</h2>
       <div class="field">
         <label for="s-name">What should I call you?</label>
         <input type="text" id="s-name" maxlength="40" placeholder="Your name">
@@ -1173,7 +1175,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     host.hidden = false;
 
     if (nm > M.hBed * 60) {
-      host.innerHTML = '<div><div class="nlab">' + label + '</div><div class="nnum">\u2014</div></div>' +
+      host.innerHTML = '<div><div class="nlab">' + label + '</div></div>' +
         '<div class="ntext">By your own schedule you would normally be <b>asleep</b> by now. ' +
         'You are due up around <b>' + clock(M.wakeClock) + '</b>.</div>';
       return;
@@ -1330,7 +1332,15 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   }
 
   /* ---------------- tonight's habits ---------------- */
-  function tonightDate(){ return shiftISO(todayISO(), 1); }
+  // Which morning tonight's habits belong to. Between midnight and your usual
+  // wake time you are already inside tonight's sleep, so they belong to THIS
+  // morning's entry -- not tomorrow's. Getting this wrong quietly files a night
+  // owl's habits against the wrong night and skews the effect engine.
+  function tonightDate(){
+    var today = todayISO();
+    var wake = (state.profile && state.profile.waketime) ? hm(state.profile.waketime) : 7 * 60;
+    return nowMins() < wake ? today : shiftISO(today, 1);
+  }
   function tonightHabits(){
     var rec = state.nights.filter(function(n){ return n.date === tonightDate(); })[0];
     return (rec && rec.habits) || {};
@@ -1363,8 +1373,10 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
         hs.nights + " night" + (hs.nights === 1 ? "" : "s") + ", you stayed on plan " +
         Math.round(hs.consistency) + "% of the time.";
     }
-    $("hab-sub").textContent = "Ticking these saves them against " + tonightDate() +
-      ", so the sleep they produce is already attached when you log that morning.";
+    $("hab-sub").textContent = readOnly()
+      ? "Example habits from someone else's fortnight. Set up your own schedule to start ticking your own."
+      : "Ticking these saves them against " + tonightDate() +
+        ", so the sleep they produce is already attached when you log that morning.";
   }
 
   /* ---------------- what moves your sleep ---------------- */
@@ -1823,7 +1835,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     $("setup-form").hidden = mode !== "form";
 
     if (mode === "choose") { renderPeople(); return; }
-    $("form-h").textContent = editingId
+    $("setup-h").textContent = editingId
       ? "Update this schedule"
       : (state.profiles.length ? "Add someone new" : "Start with two estimates");
     $("setup-cancel").hidden = !(state.profile || state.demo);
@@ -1930,7 +1942,8 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     var banner = $("banner");
     if (state.example) {
       banner.hidden = false;
-      banner.innerHTML = '<b>Example data.</b> This is someone else\'s fortnight, so you can see how it all reads. ' +
+      banner.innerHTML = '<b>Example data, read only.</b> This is someone else\'s fortnight, so you can see how it all reads. ' +
+        'Nothing here can be edited or saved. ' +
         '<button type="button" class="link-plain" id="demo-setup">Set up your own schedule</button>';
     } else if (!state.db) {
       banner.hidden = false;
@@ -1941,6 +1954,20 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     } else {
       banner.hidden = true;
     }
+    applyReadOnly();
+  }
+
+  // Runs last: renderHabits, renderGoals and renderTable rebuild their own DOM.
+  function applyReadOnly(){
+    var ro = readOnly();
+    Array.prototype.forEach.call(document.querySelectorAll(
+      '#form button[type="submit"], #f-reset, #goal-add button[type="submit"], ' +
+      '#hab-list .hab, #goals-list .gdrop, #log-body .link-btn, #need-apply'
+    ), function(n){
+      n.disabled = ro;
+      if (ro) n.title = "Example data — set up your own schedule to change anything.";
+      else n.removeAttribute("title");
+    });
   }
 
   /* ---------------- storage ---------------- */
@@ -1952,6 +1979,18 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       if (m.textContent === text) { m.textContent = ""; m.className = "form-msg"; }
     }, 4000);
   }
+  // Demo mode has no profile to write into. Without this, every write lands at
+  // the literal path "profiles/null/..." and the example fortnight gets replaced
+  // by whatever was just saved.
+  function readOnly(){ return state.demo || !state.pid; }
+  function refuseWrite(where){
+    var m = $(where || "form-msg");
+    if (!m) return;
+    m.textContent = "This is example data. Set up your own schedule to save anything.";
+    m.className = "form-msg";
+    window.setTimeout(function(){ m.textContent = ""; }, 4000);
+  }
+
   function cachedNight(date){
     return state.nights.filter(function(n){ return n.date === date; })[0] || null;
   }
@@ -1961,6 +2000,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   // whole document -- the store has no partial write, and a bare set would drop
   // the half of the record the patch does not mention.
   function upsertNight(date, patch){
+    if (readOnly()) { refuseWrite(); return null; }
     var prev = cachedNight(date) || { date: date };
     var rec = {};
     Object.keys(prev).forEach(function(k){ rec[k] = prev[k]; });
@@ -1982,7 +2022,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     return rec;
   }
   function deleteNight(date){
-    if (state.example) { msg("That is an example night — save one of your own to replace them."); return; }
+    if (readOnly()) { refuseWrite(); return; }
     state.nights = state.nights.filter(function(n){ return n.date !== date; });
     render();
     if (state.db) state.db.doc(profilePath() + "/nights/" + date).delete().catch(function(){ msg("Could not delete that night.", true); });
@@ -2055,6 +2095,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       if (!db) { render(); return; }
       state.db = db;
       var first = true;
+      cleanupNullProfile(db);
 
       db.collection("profiles").onSnapshot(function(snap){
         state.profiles = snap.docs.map(function(d){
@@ -2079,6 +2120,21 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
         render();
       }, function(){ render(); });
     }).catch(function(){ render(); });
+  }
+
+  // An earlier build let demo mode write to the literal path "profiles/null".
+  // Sweep any of those away; they belong to nobody.
+  function cleanupNullProfile(db){
+    try {
+      db.collection("profiles/null/nights").limit(400).get().then(function(ns){
+        ns.docs.forEach(function(n){ db.doc("profiles/null/nights/" + n.id).delete().catch(function(){}); });
+      }).catch(function(){});
+      db.collection("profiles/null/goals").get().then(function(gs){
+        gs.docs.forEach(function(g){ db.doc("profiles/null/goals/" + g.id).delete().catch(function(){}); });
+      }).catch(function(){});
+      db.doc("profiles/null/prefs/main").delete().catch(function(){});
+      db.doc("profiles/null").delete().catch(function(){});
+    } catch (e) {}
   }
 
   // One-time move of the single-user layout into the first profile. Originals are
@@ -2161,6 +2217,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     }).catch(function(){});
   }
   function saveTarget(mins){
+    if (readOnly()) { refuseWrite(); return; }
     state.target = mins;
     render();
     if (state.db && state.pid) state.db.doc(profilePath() + "/prefs/main").set({ targetMinutes: mins }).catch(function(){});
@@ -2187,6 +2244,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   }
   // pull whatever is already stored for the date in the form back into the fields
   function syncFormToDate(){
+    $("f-date").max = todayISO();
     var date = $("f-date").value;
     if (!date) return;
     var rec = cachedNight(date);
@@ -2270,6 +2328,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     ev.preventDefault();
     var m = metricById($("g-metric").value);
     if (!m) return;
+    if (readOnly()) { refuseWrite("goal-msg"); return; }
     var t = readGoalTarget(m);
     if (t == null || !isFinite(t) || t <= 0) {
       $("goal-msg").textContent = "That target does not read as a number.";
@@ -2285,6 +2344,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   $("goals-list").addEventListener("click", function(ev){
     var b = ev.target.closest("button[data-goal]");
     if (!b) return;
+    if (readOnly()) { refuseWrite("goal-msg"); return; }
     var id = b.dataset.goal;
     state.goals = state.goals.filter(function(g){ return g.metric !== id; });
     render();
