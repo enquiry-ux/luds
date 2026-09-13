@@ -145,6 +145,28 @@ did not log.
 
 Estimates from self-reported entries, not a medical device.
 
+## Installable build
+
+`dist/` is a complete PWA: manifest, service worker, icons and the app wrapped
+in a head carrying the install tags. All paths are relative, so it installs from
+any sub-directory. `dist/README.md` covers hosting and the iOS route.
+
+Installation needs a secure context served top-level, which is why this is a
+separate bundle rather than something the artifact can do: the artifact renders
+inside an iframe on claude.ai, so installing it would install claude.ai.
+
+Verified against a local server: the manifest parses with no errors, the service
+worker activates and controls the page, all three icons serve at their declared
+sizes, and with the network cut the app reloads and still works — including
+creating a profile and computing a schedule.
+
+The service worker precaches the shell and caches fonts opportunistically the
+first time they load, so an installed copy keeps its real typefaces offline.
+A `file://` copy cannot register a service worker, so it gets neither install
+nor font caching; everything else behaves the same.
+
+Regenerate `dist/index.html` after changing the app rather than editing it.
+
 ## Offline copy
 
 The **Download** tab hands over the whole app as one HTML file. It is the same
