@@ -14,6 +14,40 @@ nothing about what you did yesterday; a habit tracker logs your behaviour but
 knows nothing about your body clock. Holding both lets the app measure **which
 habits actually move your sleep** — the one thing neither half can do alone.
 
+## Screens
+
+**Entry screen.** Name, usual sleep time, usual wake time — with a dial that
+previews your night live as you type it. A "see it with example data first"
+route opens the app in demo mode against the example fortnight, without saving
+anything.
+
+**App shell.** Five tabs, with the last one you used remembered per browser:
+
+| Tab | Holds |
+| --- | --- |
+| Today | Energy curve, live "right now" reading, peak/dip/second-wind/wind-down windows, summary tiles |
+| Sleep | Recovery score, actogram, the night form, the full log |
+| Body clock | 24-hour dial, midsleep, chronotype, social jetlag, light timing |
+| Habits | Tonight's checklist with streaks, consistency, and what moves your sleep |
+| Goals | Targets on measured metrics, with progress and week-on-week trend |
+
+## Goals
+
+A goal is a target on something the app already measures, so progress is read
+from real nights rather than ticked off by hand. Each metric computes from an
+arbitrary run of nights, which is what lets the trend compare the last 7 against
+the 7 before.
+
+| Metric | Direction | Default |
+| --- | --- | --- |
+| Average sleep | at least | 7h 30m |
+| Sleep debt | no more than | 2h |
+| Sleep efficiency | at least | 85% |
+| Midsleep regularity | no more than | 30 min |
+| Social jetlag | no more than | 1h |
+| Habit consistency | at least | 80% |
+| Lights out by | no later than | 23:00 |
+
 ## Getting started
 
 The app opens on a setup card asking for a name and two estimates: roughly when
@@ -97,7 +131,7 @@ Estimates from self-reported entries, not a medical device.
 ## Storage
 
 Uses the artifact `db` capability: one document per night at `nights/<YYYY-MM-DD>`,
-plus `settings/prefs` for your sleep need and `settings/profile` for your name and estimated schedule. A document may hold habits with no sleep times yet (tonight's ticks); those are ignored by every statistic until the morning entry completes them. Declaring `db` makes the artifact
+plus `settings/prefs` for your sleep need `settings/profile` for your name and estimated schedule, and `goals/<metric>` for each target. A document may hold habits with no sleep times yet (tonight's ticks); those are ignored by every statistic until the morning entry completes them. Declaring `db` makes the artifact
 organisation-internal — it cannot be shared publicly.
 
 Until the first night is saved the page shows a clearly-marked example fortnight,

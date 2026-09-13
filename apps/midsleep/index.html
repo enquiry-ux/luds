@@ -293,15 +293,109 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
 .en-now .ntext b{color:var(--ink);font-weight:600}
 .src-note{font-size:12px;color:var(--muted);font-style:italic}
 @media (max-width:880px){.greet{text-align:left;align-items:flex-start}}
+/* ---------- welcome screen ---------- */
+.welcome{min-height:96vh;display:grid;place-items:center;padding:var(--s6) 20px}
+.welcome-inner{width:100%;max-width:560px;display:flex;flex-direction:column;gap:var(--s5)}
+.welcome-brand h1{font-size:52px;line-height:1;margin-top:4px;letter-spacing:-.025em}
+.welcome-lede{color:var(--ink-2);font-size:15px;margin-top:var(--s3);max-width:52ch}
+.welcome-lede em{font-style:italic;color:var(--ink)}
+.welcome-form{display:flex;flex-direction:column;gap:var(--s4);background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:var(--s5);box-shadow:var(--shadow)}
+.welcome-times{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3);align-items:end}
+.welcome-preview{display:grid;grid-template-columns:124px 1fr;gap:var(--s4);align-items:center;padding:var(--s3);border-radius:9px;background:var(--inset);border:1px solid var(--ring)}
+.welcome-preview svg{width:100%;height:auto;display:block}
+.preview-facts{display:flex;flex-direction:column;gap:5px;font-size:12.5px;min-width:0}
+.preview-facts div{display:flex;justify-content:space-between;gap:var(--s3)}
+.preview-facts .pk{color:var(--muted)}
+.preview-facts .pv{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.welcome-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3)}
+.link-plain{background:none;border:0;padding:2px;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font:inherit;font-size:13.5px}
+.link-plain:hover{color:var(--sleep)}
+.welcome-foot{font-size:12.5px;color:var(--muted);text-align:center}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--rule);position:sticky;top:0;z-index:20;background:var(--plane);margin-inline:-4px;padding-inline:4px}
+.tabs button{flex:none;font:inherit;font-size:14px;font-weight:600;color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;padding:11px 14px;cursor:pointer;white-space:nowrap}
+.tabs button:hover{color:var(--ink-2)}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--sleep)}
+.panel{display:flex;flex-direction:column;gap:var(--s5)}
+
+/* ---------- goals ---------- */
+.goals{display:flex;flex-direction:column;gap:var(--s3);padding:var(--s4) var(--s5) 0}
+.goal{display:grid;grid-template-columns:1fr auto;gap:6px var(--s3);align-items:baseline;padding:var(--s4);border-radius:9px;background:var(--inset);border:1px solid var(--ring)}
+.goal .gname{font-size:14.5px;font-weight:500}
+.goal .gnow{font-family:var(--f-mono);font-size:14px;font-variant-numeric:tabular-nums;text-align:right}
+.goal .gtrack{grid-column:1/-1;height:8px;border-radius:5px;background:var(--surface);border:1px solid var(--ring);overflow:hidden}
+.goal .gfill{height:100%;border-radius:5px;background:var(--sleep)}
+.goal.met .gfill{background:var(--good)}
+.goal .gfoot{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);font-size:12px;color:var(--muted)}
+.goal .gtrend{font-family:var(--f-mono)}
+.goal .gtrend.better{color:var(--good-ink)} .goal .gtrend.worse{color:var(--crit)}
+.goal .gdrop{margin-left:auto}
+.goals-empty{padding:var(--s4) var(--s5) 0;color:var(--muted);font-size:13.5px}
+.goal-add{display:grid;grid-template-columns:1fr 130px auto;gap:var(--s3);align-items:end;padding:var(--s4) var(--s5) var(--s5)}
+.goal-add .form-msg{grid-column:1/-1}
+select{font-family:var(--f-ui);font-size:14px;padding:8px 9px;border-radius:6px;border:1px solid var(--rule);background:var(--inset);color:var(--ink);width:100%}
+select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
+
+@media (max-width:600px){
+  .welcome-brand h1{font-size:40px}
+  .welcome-times{grid-template-columns:1fr}
+  .welcome-preview{grid-template-columns:1fr;justify-items:center}
+  .welcome-preview svg{max-width:150px}
+  .preview-facts{width:100%}
+  .goal-add{grid-template-columns:1fr}
+}
 </style>
 
-<div class="wrap">
+<div class="welcome" id="screen-welcome">
+  <div class="welcome-inner">
+    <div class="welcome-brand">
+      <div class="eyebrow">Sleep &middot; body clock &middot; habits</div>
+      <h1>Midsleep</h1>
+      <p class="welcome-lede">Your body clock decides <em>when</em> you will have energy. Your habits decide <em>how much</em>. Tell me roughly when you sleep and I will work out the rest &mdash; your peak, your dip, your second wind and when to start winding down.</p>
+    </div>
+
+    <form class="welcome-form" id="setup-form" autocomplete="off">
+      <div class="field">
+        <label for="s-name">What should I call you?</label>
+        <input type="text" id="s-name" maxlength="40" placeholder="Your name">
+      </div>
+      <div class="welcome-times">
+        <div class="field">
+          <label for="s-bed">Usually asleep around</label>
+          <input type="time" id="s-bed" value="23:00" required>
+        </div>
+        <div class="field">
+          <label for="s-wake">Usually awake around</label>
+          <input type="time" id="s-wake" value="07:00" required>
+        </div>
+      </div>
+
+      <div class="welcome-preview" id="preview">
+        <svg id="preview-dial" viewBox="0 0 200 200" role="img" aria-labelledby="pv-alt">
+          <title id="pv-alt">Preview of your night on a 24-hour dial</title>
+        </svg>
+        <div class="preview-facts" id="preview-facts"></div>
+      </div>
+
+      <div class="welcome-actions">
+        <button type="submit" class="btn">Show my schedule</button>
+        <button type="button" class="btn ghost" id="setup-cancel" hidden>Cancel</button>
+        <button type="button" class="link-plain" id="see-demo">See it with example data first</button>
+        <span class="form-msg" id="setup-msg"></span>
+      </div>
+    </form>
+
+    <p class="welcome-foot">Nothing leaves your account. Estimates only &mdash; not a medical device.</p>
+  </div>
+</div>
+
+<div class="wrap" id="screen-app" hidden>
 
   <header class="masthead">
     <div>
       <div class="eyebrow">Sleep &middot; body clock &middot; habits</div>
       <h1>Midsleep</h1>
-      <p class="lede">Two apps' worth of idea in one: your body clock sets when you will have energy, your habits decide how much. Log both and the page shows you which habits are actually moving your sleep.</p>
     </div>
     <div class="greet" id="greet" hidden>
       <div class="hi" id="greet-hi"></div>
@@ -310,36 +404,17 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
     </div>
   </header>
 
-  <section class="card setup-card" id="setup" hidden aria-labelledby="setup-h">
-    <form class="setup-inner" id="setup-form" autocomplete="off">
-      <div>
-        <h2 id="setup-h">Start with two estimates</h2>
-        <p class="say">Roughly when you fall asleep and when you wake is enough to place your body clock and work out your peaks, your dip and your wind-down. Logging real nights later sharpens it &mdash; nothing here is locked in.</p>
-      </div>
-      <div class="field-grid">
-        <div class="field">
-          <label for="s-name">Your name</label>
-          <input type="text" id="s-name" maxlength="40" placeholder="What should I call you?">
-        </div>
-        <div class="field">
-          <label for="s-bed">You usually fall asleep around</label>
-          <input type="time" id="s-bed" value="23:00" required>
-        </div>
-        <div class="field">
-          <label for="s-wake">You usually wake around</label>
-          <input type="time" id="s-wake" value="07:00" required>
-        </div>
-      </div>
-      <div class="form-actions">
-        <button type="submit" class="btn">Show my schedule</button>
-        <button type="button" class="btn ghost" id="setup-cancel" hidden>Cancel</button>
-        <span class="form-msg" id="setup-msg"></span>
-      </div>
-    </form>
-  </section>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-btn-today"  aria-controls="tab-today"  aria-selected="true"  data-tab="today">Today</button>
+    <button role="tab" id="tab-btn-sleep"  aria-controls="tab-sleep"  aria-selected="false" data-tab="sleep">Sleep</button>
+    <button role="tab" id="tab-btn-clock"  aria-controls="tab-clock"  aria-selected="false" data-tab="clock">Body clock</button>
+    <button role="tab" id="tab-btn-habits" aria-controls="tab-habits" aria-selected="false" data-tab="habits">Habits</button>
+    <button role="tab" id="tab-btn-goals"  aria-controls="tab-goals"  aria-selected="false" data-tab="goals">Goals</button>
+  </nav>
 
   <div class="notice" id="banner" hidden></div>
 
+  <div class="panel" id="tab-today" role="tabpanel" aria-labelledby="tab-btn-today">
   <!-- ============ ENERGY ============ -->
   <section class="card" aria-labelledby="en-h">
     <div class="card-head">
@@ -374,7 +449,6 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
       </div>
     </div>
   </section>
-
   <!-- ============ TILES ============ -->
   <section class="tiles" aria-label="Summary">
     <article class="card tile">
@@ -400,7 +474,9 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
       <div class="foot" id="t-consist-foot">&mdash;</div>
     </article>
   </section>
+  </div>
 
+  <div class="panel" id="tab-sleep" role="tabpanel" aria-labelledby="tab-btn-sleep" hidden>
   <!-- ============ RECOVERY ============ -->
   <section class="card" aria-labelledby="rec-h">
     <div class="card-head">
@@ -428,35 +504,6 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
       <div class="rec-parts" id="rec-parts"></div>
     </div>
   </section>
-
-  <!-- ============ HABITS ============ -->
-  <section class="card" aria-labelledby="hab-h">
-    <div class="card-head">
-      <h2 id="hab-h">Tonight's habits</h2>
-      <p class="sub" id="hab-sub">Tick these as the day goes. They are saved against tomorrow morning's entry, so the sleep they produce is already attached when you log it.</p>
-    </div>
-    <div class="habits">
-      <div class="hab-list" id="hab-list"></div>
-      <div class="hab-side">
-        <div class="consist">
-          <div class="cap">Consistency</div>
-          <div class="num" id="hab-consist">&ndash;&ndash;</div>
-          <p class="d" id="hab-consist-d">Share of habits you kept on plan over your last fortnight.</p>
-        </div>
-        <p class="hab-note">A streak counts back from your most recent logged night, not from today.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ WHAT MOVES YOUR SLEEP ============ -->
-  <section class="card" aria-labelledby="fx-h">
-    <div class="card-head">
-      <h2 id="fx-h">What moves your sleep</h2>
-      <p class="sub">Nights with each habit against nights without it. This is the part neither a sleep tracker nor a habit tracker can do alone &mdash; it needs both halves.</p>
-    </div>
-    <div class="fx" id="fx-list"></div>
-  </section>
-
   <!-- ============ ACTOGRAM ============ -->
   <section class="card" aria-labelledby="acto-h">
     <div class="card-head">
@@ -475,24 +522,6 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
       </div>
     </div>
   </section>
-
-  <!-- ============ BODY CLOCK ============ -->
-  <section class="card" aria-labelledby="clock-h">
-    <div class="card-head">
-      <h2 id="clock-h">Your body clock</h2>
-      <p class="sub">Midsleep anchors the whole circadian phase. From it the landmarks below are estimated with the standard chronobiology offsets.</p>
-    </div>
-    <div class="clock-grid">
-      <div>
-        <svg class="dial" id="dial" viewBox="0 0 280 280" role="img" aria-labelledby="dial-alt">
-          <title id="dial-alt">24-hour dial showing your habitual sleep window and circadian landmarks</title>
-        </svg>
-        <div class="dial-key" id="dial-key"></div>
-      </div>
-      <div class="clock-facts" id="clock-facts"></div>
-    </div>
-  </section>
-
   <!-- ============ LOG ============ -->
   <section class="card" aria-labelledby="form-h">
     <div class="card-head">
@@ -559,7 +588,6 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
       </div>
     </form>
   </section>
-
   <!-- ============ TABLE ============ -->
   <section class="card" aria-labelledby="log-h">
     <div class="card-head">
@@ -580,6 +608,78 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
       </table>
     </div>
   </section>
+  </div>
+
+  <div class="panel" id="tab-clock" role="tabpanel" aria-labelledby="tab-btn-clock" hidden>
+  <!-- ============ BODY CLOCK ============ -->
+  <section class="card" aria-labelledby="clock-h">
+    <div class="card-head">
+      <h2 id="clock-h">Your body clock</h2>
+      <p class="sub">Midsleep anchors the whole circadian phase. From it the landmarks below are estimated with the standard chronobiology offsets.</p>
+    </div>
+    <div class="clock-grid">
+      <div>
+        <svg class="dial" id="dial" viewBox="0 0 280 280" role="img" aria-labelledby="dial-alt">
+          <title id="dial-alt">24-hour dial showing your habitual sleep window and circadian landmarks</title>
+        </svg>
+        <div class="dial-key" id="dial-key"></div>
+      </div>
+      <div class="clock-facts" id="clock-facts"></div>
+    </div>
+  </section>
+  </div>
+
+  <div class="panel" id="tab-habits" role="tabpanel" aria-labelledby="tab-btn-habits" hidden>
+  <!-- ============ HABITS ============ -->
+  <section class="card" aria-labelledby="hab-h">
+    <div class="card-head">
+      <h2 id="hab-h">Tonight's habits</h2>
+      <p class="sub" id="hab-sub">Tick these as the day goes. They are saved against tomorrow morning's entry, so the sleep they produce is already attached when you log it.</p>
+    </div>
+    <div class="habits">
+      <div class="hab-list" id="hab-list"></div>
+      <div class="hab-side">
+        <div class="consist">
+          <div class="cap">Consistency</div>
+          <div class="num" id="hab-consist">&ndash;&ndash;</div>
+          <p class="d" id="hab-consist-d">Share of habits you kept on plan over your last fortnight.</p>
+        </div>
+        <p class="hab-note">A streak counts back from your most recent logged night, not from today.</p>
+      </div>
+    </div>
+  </section>
+  <!-- ============ WHAT MOVES YOUR SLEEP ============ -->
+  <section class="card" aria-labelledby="fx-h">
+    <div class="card-head">
+      <h2 id="fx-h">What moves your sleep</h2>
+      <p class="sub">Nights with each habit against nights without it. This is the part neither a sleep tracker nor a habit tracker can do alone &mdash; it needs both halves.</p>
+    </div>
+    <div class="fx" id="fx-list"></div>
+  </section>
+  </div>
+
+  <div class="panel" id="tab-goals" role="tabpanel" aria-labelledby="tab-btn-goals" hidden>
+  <!-- ============ GOALS ============ -->
+  <section class="card" aria-labelledby="goals-h">
+    <div class="card-head">
+      <h2 id="goals-h">Goals</h2>
+      <p class="sub">A goal here is a target on something the app already measures, so progress is read from your real nights rather than ticked off by hand.</p>
+    </div>
+    <div class="goals" id="goals-list"></div>
+    <form class="goal-add" id="goal-add">
+      <div class="field">
+        <label for="g-metric">Track</label>
+        <select id="g-metric"></select>
+      </div>
+      <div class="field">
+        <label for="g-target">Target</label>
+        <input type="text" id="g-target" inputmode="decimal">
+      </div>
+      <button type="submit" class="btn">Add goal</button>
+      <span class="form-msg" id="goal-msg"></span>
+    </form>
+  </section>
+  </div>
 
   <footer>
     Estimates from your own entries, not a medical device. The energy curve is a two-process model &mdash; homeostatic sleep pressure since waking, sleep inertia, the midafternoon trough and the evening wake-maintenance zone &mdash; scaled by your sleep debt. Circadian landmarks use the published offsets: melatonin onset about two hours before habitual sleep onset, temperature minimum about two hours before habitual wake. Chronotype uses the Munich ChronoType Questionnaire's sleep-corrected midsleep on free days. Habit effects are observed differences between your own nights, not proof of cause.
@@ -699,7 +799,9 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
     target: 8 * 60,
     example: true,
     db: null,
-    profile: null    // {name, bedtime, waketime} -- the estimate the page starts from
+    profile: null,   // {name, bedtime, waketime} -- the estimate the page starts from
+    goals: [],
+    demo: false      // looking around with the example fortnight, before signing up
   };
 
   /* ---------------- statistics ---------------- */
@@ -1522,12 +1624,204 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
     });
   }
 
+  /* ---------------- goals ----------------
+     A goal is a target on something already measured, so progress is read off
+     real nights instead of being ticked by hand. Each metric computes from an
+     arbitrary run of nights, which is what lets the trend compare this week
+     against last.                                                            */
+  var GOAL_METRICS = [
+    { id: "duration", label: "Average sleep", dir: "above", def: 450, kind: "dur",
+      help: "Mean time actually asleep across your logged nights.",
+      calc: function(ns){ return ns.length ? mean(ns.map(function(n){ return n.tst; })) : null; } },
+    { id: "debt", label: "Sleep debt", dir: "below", def: 120, kind: "dur",
+      help: "Running deficit against your sleep need, surpluses repaying it.",
+      calc: function(ns, ctx){
+        if (!ns.length) return null;
+        var d = 0, t = ctx.target;
+        ns.slice().reverse().forEach(function(n){ d = Math.max(0, d + (t - n.tst)); });
+        return d; } },
+    { id: "efficiency", label: "Sleep efficiency", dir: "above", def: 85, kind: "pct",
+      help: "Share of time in bed spent asleep. 85% is the clinical mark.",
+      calc: function(ns){ return ns.length ? mean(ns.map(function(n){ return n.eff; })) : null; } },
+    { id: "regularity", label: "Midsleep regularity", dir: "below", def: 30, kind: "min",
+      help: "How far your midsleep wanders night to night.",
+      calc: function(ns){ return ns.length >= 3 ? sd(ns.map(function(n){ return n.midW; })) : null; } },
+    { id: "jetlag", label: "Social jetlag", dir: "below", def: 60, kind: "dur",
+      help: "Gap between free-day and work-day midsleep. Needs both kinds of night.",
+      calc: function(ns){
+        var f = ns.filter(function(n){ return n.free; }), w = ns.filter(function(n){ return !n.free; });
+        if (!f.length || !w.length) return null;
+        return Math.abs(mean(f.map(function(n){ return n.midW; })) - mean(w.map(function(n){ return n.midW; }))); } },
+    { id: "consistency", label: "Habit consistency", dir: "above", def: 80, kind: "pct",
+      help: "Share of habits kept on plan across nights that carry habit data.",
+      calc: function(ns){
+        var wh = ns.filter(function(n){ return n.habits; });
+        if (!wh.length) return null;
+        var k = 0, t = 0;
+        wh.forEach(function(n){ HABITS.forEach(function(h){ t++; if (onPlan(h, n.habits[h.id] === true)) k++; }); });
+        return t ? (k / t) * 100 : null; } },
+    { id: "bedtime", label: "Lights out by", dir: "below", def: toWin(23 * 60), kind: "clockw",
+      help: "Median lights-out across your logged nights.",
+      calc: function(ns){ return ns.length ? median(ns.map(function(n){ return n.bedW; })) : null; } }
+  ];
+  function metricById(id){
+    return GOAL_METRICS.filter(function(m){ return m.id === id; })[0] || null;
+  }
+  function fmtMetric(m, v){
+    if (v == null) return "\u2014";
+    if (m.kind === "dur") return dur(v);
+    if (m.kind === "pct") return Math.round(v) + "%";
+    if (m.kind === "min") return Math.round(v) + " min";
+    if (m.kind === "clockw") return clock(fromWin(v));
+    return String(Math.round(v));
+  }
+  // A change in a metric is an interval, not a reading: formatting a 15-minute
+  // shift in bedtime through the clock formatter would print it as "18:15".
+  function fmtDelta(m, v){
+    if (m.kind === "pct") return Math.round(v) + " pp";
+    if (m.kind === "min" || m.kind === "clockw") return Math.round(v) + " min";
+    if (m.kind === "dur") return dur(v);
+    return String(Math.round(v));
+  }
+  function goalProgress(m, cur, target){
+    if (cur == null) return 0;
+    if (m.dir === "above") return clamp((cur / target) * 100, 0, 100);
+    return cur <= target ? 100 : clamp((target / cur) * 100, 0, 100);
+  }
+
+  function renderGoals(s){
+    var host = $("goals-list"), ctx = { target: s.target };
+    host.innerHTML = "";
+
+    if (!state.goals.length) {
+      host.innerHTML = '<p class="goals-empty">No goals set. Pick one below &mdash; each is read from the nights you log, ' +
+        'so there is nothing extra to keep up to date.</p>';
+    }
+    state.goals.forEach(function(g){
+      var m = metricById(g.metric);
+      if (!m) return;
+      var cur = m.calc(s.recent, ctx);
+      var met = cur != null && (m.dir === "above" ? cur >= g.target : cur <= g.target);
+      var prog = goalProgress(m, cur, g.target);
+
+      var now7 = m.calc(s.recent.slice(0, 7), ctx), prev7 = m.calc(s.recent.slice(7, 14), ctx);
+      var trend = "";
+      var minDelta = (m.kind === "dur" || m.kind === "clockw" || m.kind === "min") ? 5 : 2;
+      if (now7 != null && prev7 != null && Math.abs(now7 - prev7) >= minDelta) {
+        var better = m.dir === "above" ? now7 > prev7 : now7 < prev7;
+        trend = '<span class="gtrend ' + (better ? "better" : "worse") + '">' +
+                (now7 > prev7 ? "\u2191" : "\u2193") + " " + fmtDelta(m, Math.abs(now7 - prev7)) +
+                " vs the week before</span>";
+      }
+
+      var row = document.createElement("div");
+      row.className = "goal" + (met ? " met" : "");
+      row.innerHTML =
+        '<div class="gname">' + m.label + ' <span style="color:var(--muted);font-weight:400">' +
+          (m.dir === "above" ? "at least " : "no more than ") + fmtMetric(m, g.target) + '</span></div>' +
+        '<div class="gnow">' + fmtMetric(m, cur) + '</div>' +
+        '<div class="gtrack"><div class="gfill" style="width:' + prog.toFixed(1) + '%"></div></div>' +
+        '<div class="gfoot">' +
+          (cur == null
+            ? '<span>Not enough logged nights yet</span>'
+            : '<span class="chip ' + (met ? "good" : "warn") + '"><i class="dot"></i>' + (met ? "Met" : "Not yet") + '</span>') +
+          trend +
+          '<button type="button" class="link-btn gdrop" data-goal="' + m.id + '">Remove</button>' +
+        '</div>';
+      host.appendChild(row);
+    });
+
+    // only offer metrics that are not already being tracked
+    var used = state.goals.map(function(g){ return g.metric; });
+    var sel = $("g-metric"), keep = sel.value;
+    sel.innerHTML = GOAL_METRICS.filter(function(m){ return used.indexOf(m.id) < 0; })
+      .map(function(m){ return '<option value="' + m.id + '">' + m.label + '</option>'; }).join("");
+    if (!sel.options.length) {
+      sel.innerHTML = '<option value="">Every metric is already tracked</option>';
+      $("goal-add").querySelector("button").disabled = true;
+    } else {
+      $("goal-add").querySelector("button").disabled = false;
+      if (keep && Array.prototype.some.call(sel.options, function(o){ return o.value === keep; })) sel.value = keep;
+      syncGoalTarget();
+    }
+  }
+  function syncGoalTarget(){
+    var m = metricById($("g-metric").value), inp = $("g-target");
+    if (!m) return;
+    if (m.kind === "clockw") { inp.type = "time"; inp.value = clock(fromWin(m.def)); }
+    else if (m.kind === "dur") { inp.type = "time"; inp.value = clock(m.def); }
+    else { inp.type = "number"; inp.value = String(m.def); }
+  }
+  function readGoalTarget(m){
+    var raw = $("g-target").value;
+    if (!raw) return null;
+    if (m.kind === "clockw") return toWin(hm(raw));
+    if (m.kind === "dur") return hm(raw);
+    var v = parseFloat(raw);
+    return isNaN(v) ? null : v;
+  }
+
   /* ---------------- setup & greeting ---------------- */
   var setupOpen = false;
-  function renderSetup(){
-    var show = !state.profile || setupOpen;
-    $("setup").hidden = !show;
-    $("setup-cancel").hidden = !state.profile;
+  var TABS = ["today", "sleep", "clock", "habits", "goals"];
+  var activeTab = "today";
+  try { var saved = localStorage.getItem("midsleep.tab"); if (TABS.indexOf(saved) >= 0) activeTab = saved; } catch (e) {}
+
+  function renderScreens(){
+    var show = (!state.profile && !state.demo) || setupOpen;
+    $("screen-welcome").hidden = !show;
+    $("screen-app").hidden = show;
+    $("setup-cancel").hidden = !(state.profile || state.demo);
+    if (show) renderPreview();
+  }
+  function setTab(id){
+    if (TABS.indexOf(id) < 0) id = "today";
+    activeTab = id;
+    TABS.forEach(function(t){
+      $("tab-" + t).hidden = t !== id;
+      $("tab-btn-" + t).setAttribute("aria-selected", String(t === id));
+      $("tab-btn-" + t).tabIndex = t === id ? 0 : -1;
+    });
+    try { localStorage.setItem("midsleep.tab", id); } catch (e) {}
+  }
+
+  // live preview of the night being typed on the welcome screen
+  function renderPreview(){
+    var svg = $("preview-dial");
+    while (svg.childNodes.length > 1) svg.removeChild(svg.lastChild);
+    var bed = $("s-bed").value, wake = $("s-wake").value;
+    var facts = $("preview-facts");
+    if (!bed || !wake) { facts.innerHTML = ""; return; }
+
+    var PX = 100, PY = 100, R = 66;
+    var o = hm(bed), w = hm(wake);
+    svg.appendChild(el("circle", { cx: PX, cy: PY, r: R, fill: "none", stroke: "var(--grid)", "stroke-width": 17 }));
+    for (var h = 0; h < 24; h += 3) {
+      var a = polar(PX, PY, R + 11, h * 60), b2 = polar(PX, PY, R + 16, h * 60);
+      svg.appendChild(el("line", { x1: a[0].toFixed(1), y1: a[1].toFixed(1), x2: b2[0].toFixed(1), y2: b2[1].toFixed(1),
+        stroke: "var(--rule)", "stroke-width": 1.4, fill: "none" }));
+    }
+    svg.appendChild(el("path", { d: arcPath(PX, PY, R, o, w), fill: "none", stroke: "var(--sleep)", "stroke-width": 17, "stroke-linecap": "butt" }));
+
+    var ow = toWin(o), ww = toWin(w);
+    if (ww <= ow) ww += 1440;
+    var mid = fromWin((ow + ww) / 2);
+    var p1 = polar(PX, PY, R - 13, mid), p2 = polar(PX, PY, R + 13, mid);
+    svg.appendChild(el("line", { x1: p1[0].toFixed(1), y1: p1[1].toFixed(1), x2: p2[0].toFixed(1), y2: p2[1].toFixed(1),
+      stroke: "var(--ink)", "stroke-width": 2.4, "stroke-opacity": .85, fill: "none" }));
+    svg.appendChild(el("text", { x: PX, y: PY + 2, "text-anchor": "middle", fill: "var(--ink)",
+      "font-size": 19, "font-weight": 600, "font-family": "var(--f-mono)" }, clock(mid)));
+    svg.appendChild(el("text", { x: PX, y: PY + 16, "text-anchor": "middle", fill: "var(--muted)",
+      "font-size": 7.5, "letter-spacing": "1.2", "font-family": "var(--f-ui)" }, "MIDSLEEP"));
+
+    var cbt = ((w - 120) % 1440 + 1440) % 1440;
+    var dl = ((o - 120) % 1440 + 1440) % 1440;
+    function prow(k, v){ return '<div><span class="pk">' + k + '</span><span class="pv">' + v + '</span></div>'; }
+    facts.innerHTML =
+      prow("Time asleep", dur(ww - ow)) +
+      prow("Midsleep", clock(mid)) +
+      prow("Melatonin onset", clock(dl)) +
+      prow("Morning light", clock(cbt) + "\u2013" + clock((cbt + 240) % 1440));
   }
   function renderGreet(s){
     var g = $("greet"), pr = state.profile;
@@ -1545,7 +1839,7 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
   /* ---------------- render all ---------------- */
   function render(){
     var s = stats(), hs = habitStats(s);
-    renderSetup();
+    renderScreens();
     renderGreet(s);
     renderEnergy(s);
     renderTiles(s, hs);
@@ -1555,11 +1849,13 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
     renderActogram(s);
     renderDial(s);
     renderTable(s);
+    renderGoals(s);
 
     var banner = $("banner");
     if (state.example) {
       banner.hidden = false;
-      banner.innerHTML = '<b>Example fortnight.</b> These nights are here so the page reads as it will once it is yours. Save your first night and they clear.';
+      banner.innerHTML = '<b>Example data.</b> This is someone else\'s fortnight, so you can see how it all reads. ' +
+        '<button type="button" class="link-plain" id="demo-setup">Set up your own schedule</button>';
     } else if (!state.db) {
       banner.hidden = false;
       banner.innerHTML = '<b>Not being saved.</b> Storage is unavailable in this view, so anything you add stays only until you close the page.';
@@ -1636,6 +1932,13 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
         msg("Lost the connection to storage — changes are no longer being saved.", true);
         render();
       });
+      db.collection("goals").onSnapshot(function(snap){
+        state.goals = snap.docs.map(function(d){
+          var v = d.data() || {};
+          return { metric: v.metric || d.id, target: +v.target };
+        }).filter(function(g){ return metricById(g.metric) && isFinite(g.target); });
+        render();
+      }, function(){});
       db.doc("settings/profile").onSnapshot(function(snap){
         if (snap.exists) {
           var d = snap.data() || {};
@@ -1662,6 +1965,7 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
   function saveProfile(pr){
     state.profile = pr;
     setupOpen = false;
+    state.demo = false;
     syncFormToDate();
     render();
     if (state.db) state.db.doc("settings/profile").set(pr).catch(function(){
@@ -1720,6 +2024,57 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
     }
   }
 
+  $("tabs").addEventListener("click", function(ev){
+    var b = ev.target.closest("button[data-tab]");
+    if (b) setTab(b.dataset.tab);
+  });
+  $("tabs").addEventListener("keydown", function(ev){
+    if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
+    ev.preventDefault();
+    var i = TABS.indexOf(activeTab);
+    var next = TABS[(i + (ev.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length];
+    setTab(next);
+    $("tab-btn-" + next).focus();
+  });
+
+  $("see-demo").addEventListener("click", function(){
+    state.demo = true;
+    setupOpen = false;
+    render();
+  });
+  $("banner").addEventListener("click", function(ev){
+    if (ev.target.id === "demo-setup") { setupOpen = true; render(); window.scrollTo({ top: 0 }); $("s-name").focus(); }
+  });
+
+  $("s-bed").addEventListener("input", renderPreview);
+  $("s-wake").addEventListener("input", renderPreview);
+  $("g-metric").addEventListener("change", syncGoalTarget);
+
+  $("goal-add").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var m = metricById($("g-metric").value);
+    if (!m) return;
+    var t = readGoalTarget(m);
+    if (t == null || !isFinite(t) || t <= 0) {
+      $("goal-msg").textContent = "That target does not read as a number.";
+      $("goal-msg").className = "form-msg err";
+      return;
+    }
+    $("goal-msg").textContent = "";
+    $("goal-msg").className = "form-msg";
+    state.goals = state.goals.filter(function(g){ return g.metric !== m.id; }).concat([{ metric: m.id, target: t }]);
+    render();
+    if (state.db) state.db.doc("goals/" + m.id).set({ metric: m.id, target: t }).catch(function(){});
+  });
+  $("goals-list").addEventListener("click", function(ev){
+    var b = ev.target.closest("button[data-goal]");
+    if (!b) return;
+    var id = b.dataset.goal;
+    state.goals = state.goals.filter(function(g){ return g.metric !== id; });
+    render();
+    if (state.db) state.db.doc("goals/" + id).delete().catch(function(){});
+  });
+
   $("setup-form").addEventListener("submit", function(ev){
     ev.preventDefault();
     var bed = $("s-bed").value, wake = $("s-wake").value;
@@ -1736,7 +2091,7 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
     if (pr) { $("s-name").value = pr.name || ""; $("s-bed").value = pr.bedtime; $("s-wake").value = pr.waketime; }
     setupOpen = true;
     render();
-    $("setup").scrollIntoView({ behavior: "smooth", block: "start" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
     $("s-name").focus();
   });
   $("setup-cancel").addEventListener("click", function(){ setupOpen = false; render(); });
@@ -1809,6 +2164,7 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
 
   /* ---------------- boot ---------------- */
   buildFormHabits();
+  setTab(activeTab);
   setDefaultDate();
   syncFormToDate();
   render();
