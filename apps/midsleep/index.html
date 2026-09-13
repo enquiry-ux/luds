@@ -1,0 +1,1399 @@
+<title>Midsleep Diary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --plane:#eef0e9;
+  --surface:#fbfbf8;
+  --inset:#f3f5ed;
+  --ink:#14161c;
+  --ink-2:#565c58;
+  --muted:#8a8f88;
+  --grid:#dee1d6;
+  --rule:#d5d9cc;
+  --ring:rgba(20,22,28,.10);
+  --sleep:#3d4c99;  --sleep-rgb:61,76,153;
+  --wake:#c8791f;   --wake-rgb:200,121,31;
+  --good:#0ca30c;   --warn:#fab219;  --crit:#d03b3b;
+  --good-ink:#006300;
+  --shadow:0 1px 2px rgba(20,22,28,.05), 0 6px 18px -12px rgba(20,22,28,.22);
+
+  --f-display:"Spectral", Georgia, "Times New Roman", serif;
+  --f-ui:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:36px; --s7:56px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --plane:#0c0d12;
+    --surface:#14151c;
+    --inset:#1b1d26;
+    --ink:#f1f2ee;
+    --ink-2:#a7ada6;
+    --muted:#878d86;
+    --grid:#262834;
+    --rule:#2e3140;
+    --ring:rgba(255,255,255,.10);
+    --sleep:#7b86de; --sleep-rgb:123,134,222;
+    --wake:#c2862f;  --wake-rgb:194,134,47;
+    --good-ink:#0ca30c;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 22px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --plane:#0c0d12;
+  --surface:#14151c;
+  --inset:#1b1d26;
+  --ink:#f1f2ee;
+  --ink-2:#a7ada6;
+  --muted:#878d86;
+  --grid:#262834;
+  --rule:#2e3140;
+  --ring:rgba(255,255,255,.10);
+  --sleep:#7b86de; --sleep-rgb:123,134,222;
+  --wake:#c2862f;  --wake-rgb:194,134,47;
+  --good-ink:#0ca30c;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 22px -14px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--plane);
+  color:var(--ink);
+  font-family:var(--f-ui);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{
+  max-width:1080px;
+  margin:0 auto;
+  padding-inline:20px;
+  padding-block:var(--s6) var(--s7);
+  display:flex;
+  flex-direction:column;
+  gap:var(--s5);
+}
+h1,h2,h3{margin:0;text-wrap:balance;font-family:var(--f-display);font-weight:600;letter-spacing:-.01em}
+p{margin:0}
+.eyebrow{
+  font-family:var(--f-ui);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* ---------- masthead ---------- */
+.masthead{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:var(--s4);
+  padding-bottom:var(--s4);
+  border-bottom:1px solid var(--rule);
+}
+.masthead h1{font-size:40px;line-height:1.05;margin-top:2px}
+.masthead .lede{color:var(--ink-2);max-width:54ch;margin-top:6px;font-size:14px}
+.target-field{
+  display:flex;align-items:center;gap:var(--s2);
+  font-size:13px;color:var(--ink-2);
+}
+.target-field input{width:60px}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--surface);
+  border:1px solid var(--ring);
+  border-radius:10px;
+  box-shadow:var(--shadow);
+}
+.card-head{
+  display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;
+  gap:var(--s3);
+  padding:var(--s4) var(--s4) 0;
+}
+.card-head h2{font-size:20px}
+.card-head .sub{font-size:13px;color:var(--muted);max-width:58ch}
+
+/* ---------- recovery ---------- */
+.recovery{
+  display:grid;
+  grid-template-columns:minmax(220px,280px) 1fr;
+  gap:var(--s5);
+  padding:var(--s5);
+  align-items:start;
+}
+.rec-dial{display:flex;flex-direction:column;align-items:center;gap:var(--s3);text-align:center}
+.rec-ring{position:relative;width:180px;height:180px}
+.rec-ring svg{width:100%;height:100%;display:block}
+.rec-centre{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:0;
+}
+.rec-num{font-family:var(--f-display);font-size:52px;line-height:1;font-weight:600;letter-spacing:-.02em}
+.rec-den{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:6px}
+.rec-verdict{font-family:var(--f-display);font-size:19px;font-weight:600}
+.rec-note{font-size:13px;color:var(--ink-2);max-width:34ch}
+
+.rec-parts{display:flex;flex-direction:column;gap:var(--s3)}
+.part{display:grid;grid-template-columns:1fr auto;gap:2px var(--s3);align-items:baseline}
+.part-name{font-size:13.5px;font-weight:500}
+.part-weight{font-size:11px;color:var(--muted);font-family:var(--f-mono)}
+.part-val{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.part-track{
+  grid-column:1 / -1;
+  height:7px;border-radius:4px;background:var(--inset);
+  border:1px solid var(--ring);overflow:hidden;
+}
+.part-fill{height:100%;background:var(--sleep);border-radius:4px}
+.part.absent .part-fill{background:var(--muted);opacity:.35}
+.part.absent .part-name{color:var(--muted)}
+
+/* ---------- chips ---------- */
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11.5px;font-weight:600;letter-spacing:.02em;
+  padding:2px 8px;border-radius:999px;
+  border:1px solid var(--ring);background:var(--inset);color:var(--ink-2);
+  white-space:nowrap;
+}
+.chip .dot{width:7px;height:7px;border-radius:50%;flex:none}
+.chip.good .dot{background:var(--good)} .chip.good{color:var(--good-ink)}
+.chip.warn .dot{background:var(--warn)}
+.chip.crit .dot{background:var(--crit)} .chip.crit{color:var(--crit)}
+
+/* ---------- tiles ---------- */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3)}
+.tile{padding:var(--s4);display:flex;flex-direction:column;gap:var(--s1);min-width:0}
+.tile .label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tile .value{font-family:var(--f-display);font-size:29px;font-weight:600;line-height:1.1;letter-spacing:-.015em}
+.tile .value .unit{font-size:16px;color:var(--ink-2);font-weight:400;margin-left:1px}
+.tile .foot{font-size:12.5px;color:var(--ink-2);font-family:var(--f-mono)}
+.tile .spark{margin-top:auto;padding-top:var(--s2)}
+.tile .spark svg{width:100%;height:auto;display:block}
+
+/* ---------- actogram ---------- */
+.acto-body{padding:var(--s4)}
+.legend{
+  display:flex;flex-wrap:wrap;gap:var(--s4);
+  padding:0 var(--s4) var(--s3);font-size:12.5px;color:var(--ink-2);
+}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.swatch{width:18px;height:9px;border-radius:3px;flex:none}
+.swatch.sleep{background:var(--sleep)}
+.swatch.wake{background:var(--wake)}
+.swatch.mid{width:2px;height:13px;border-radius:1px;background:var(--ink);opacity:.75}
+
+.acto{display:flex;flex-direction:column;gap:3px}
+.acto-row{
+  display:grid;grid-template-columns:64px 1fr 66px;
+  align-items:center;gap:var(--s3);
+  border-radius:5px;padding:1px 3px;
+}
+.acto-row:hover,.acto-row:focus-visible{background:var(--inset);outline:none}
+.acto-date{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);white-space:nowrap}
+.acto-date .free{color:var(--wake)}
+.acto-dur{font-family:var(--f-mono);font-size:11.5px;text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.acto-track{
+  position:relative;height:17px;border-radius:3px;
+  background-image:repeating-linear-gradient(to right,var(--grid) 0 1px,transparent 1px 16.6667%);
+  background-color:var(--inset);
+}
+.acto-mid-line{position:absolute;top:-2px;bottom:-2px;left:33.3333%;width:1px;background:var(--rule)}
+.bar{position:absolute;top:2px;height:13px;border-radius:4px}
+.bar.sleep{background:var(--sleep)}
+.bar.wake{background:var(--wake);border-top-right-radius:1px;border-bottom-right-radius:1px}
+.bar.tick{
+  top:0;height:17px;width:2px;border-radius:1px;
+  background:var(--ink);opacity:.75;
+  box-shadow:0 0 0 1.5px var(--surface);
+}
+.acto-axis{
+  position:relative;height:18px;margin-top:6px;
+  grid-column:2;
+}
+.acto-axis-row{display:grid;grid-template-columns:64px 1fr 66px;gap:var(--s3)}
+.acto-axis b{
+  position:absolute;top:0;transform:translateX(-50%);
+  font-family:var(--f-mono);font-size:10.5px;font-weight:400;color:var(--muted);white-space:nowrap;
+}
+
+/* ---------- body clock ---------- */
+.clock-grid{
+  display:grid;grid-template-columns:minmax(240px,300px) 1fr;
+  gap:var(--s5);padding:var(--s5);align-items:start;
+}
+.dial{width:100%;max-width:290px;margin:0 auto;display:block}
+.dial-key{display:flex;flex-direction:column;gap:7px;margin:var(--s4) auto 0;max-width:290px;font-size:12.5px}
+.dial-key > div{display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:var(--s2)}
+.dial-key i{display:block;height:10px;border-radius:2px;width:18px}
+.dial-key .k-name{color:var(--ink-2)}
+.dial-key .k-val{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+.clock-facts{display:flex;flex-direction:column;gap:var(--s4)}
+.fact{display:flex;flex-direction:column;gap:3px;padding-bottom:var(--s3);border-bottom:1px solid var(--rule)}
+.fact:last-child{border-bottom:0;padding-bottom:0}
+.fact .k{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.fact .v{font-family:var(--f-display);font-size:22px;font-weight:600;line-height:1.2}
+.fact .v .mono{font-family:var(--f-mono);font-size:20px;font-weight:500}
+.fact .d{font-size:13px;color:var(--ink-2);max-width:52ch}
+.scale{margin-top:var(--s2)}
+.scale-track{
+  position:relative;height:9px;border-radius:5px;border:1px solid var(--ring);
+  background:linear-gradient(to right,rgba(var(--wake-rgb),.30),rgba(var(--sleep-rgb),.42));
+}
+.scale-pin{
+  position:absolute;top:50%;width:3px;height:19px;border-radius:2px;
+  background:var(--ink);transform:translate(-50%,-50%);
+  box-shadow:0 0 0 2px var(--surface);
+}
+.scale-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px}
+
+/* ---------- form ---------- */
+.form{padding:var(--s5);display:flex;flex-direction:column;gap:var(--s4)}
+.field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:var(--s3)}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.field .hint{font-size:11.5px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none}
+input[type="date"],input[type="time"],input[type="number"],input[type="text"],select{
+  font-family:var(--f-mono);font-size:14px;
+  padding:8px 9px;border-radius:6px;
+  border:1px solid var(--rule);background:var(--inset);color:var(--ink);
+  width:100%;min-width:0;
+}
+input[type="text"]{font-family:var(--f-ui)}
+input:focus-visible,select:focus-visible,button:focus-visible,.acto-row:focus-visible{
+  outline:2px solid var(--sleep);outline-offset:2px;
+}
+.seg{display:flex;gap:3px;background:var(--inset);border:1px solid var(--rule);border-radius:6px;padding:3px}
+.seg button{
+  flex:1;font-family:var(--f-mono);font-size:13px;padding:5px 0;
+  border:0;border-radius:4px;background:transparent;color:var(--ink-2);cursor:pointer;
+}
+.seg button[aria-pressed="true"]{background:var(--sleep);color:#fff}
+.switch{display:flex;align-items:center;gap:var(--s2);font-size:13.5px;color:var(--ink-2)}
+.switch input{width:16px;height:16px;accent-color:var(--sleep)}
+.form-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3)}
+.btn{
+  font-family:var(--f-ui);font-size:14px;font-weight:600;
+  padding:9px 18px;border-radius:6px;border:1px solid transparent;cursor:pointer;
+  background:var(--sleep);color:#fff;
+}
+.btn.ghost{background:transparent;color:var(--ink-2);border-color:var(--rule)}
+.btn:hover{filter:brightness(1.07)}
+.form-msg{font-size:13px;color:var(--ink-2)}
+.form-msg.err{color:var(--crit)}
+
+/* ---------- table ---------- */
+.table-scroll{overflow-x:auto;padding:0 var(--s4) var(--s4)}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+th{
+  text-align:left;font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);padding:0 10px 7px 0;border-bottom:1px solid var(--rule);white-space:nowrap;
+}
+td{padding:8px 10px 8px 0;border-bottom:1px solid var(--grid);font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.note{font-family:var(--f-ui);color:var(--ink-2);white-space:normal;min-width:150px}
+tbody tr:last-child td{border-bottom:0}
+th.num,td.num{text-align:right;padding-right:14px}
+.link-btn{background:none;border:0;color:var(--muted);cursor:pointer;font-size:12px;font-family:var(--f-ui);padding:2px 4px;border-radius:4px}
+.link-btn:hover{color:var(--crit)}
+
+/* ---------- notices ---------- */
+.notice{
+  display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);
+  font-size:13px;color:var(--ink-2);
+  padding:10px var(--s4);border-radius:8px;
+  background:var(--inset);border:1px solid var(--ring);
+}
+.notice b{color:var(--ink);font-weight:600}
+
+/* ---------- tooltip ---------- */
+.tip{
+  position:fixed;z-index:60;pointer-events:none;opacity:0;
+  transition:opacity .12s ease;
+  background:var(--surface);color:var(--ink);
+  border:1px solid var(--ring);border-radius:7px;
+  box-shadow:var(--shadow);padding:9px 11px;
+  font-size:12.5px;max-width:250px;
+}
+.tip[data-show="1"]{opacity:1}
+.tip .tip-t{font-family:var(--f-display);font-weight:600;font-size:14px;margin-bottom:5px}
+.tip dl{display:grid;grid-template-columns:auto auto;gap:2px var(--s3);margin:0}
+.tip dt{color:var(--muted)}
+.tip dd{margin:0;font-family:var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+
+footer{
+  font-size:12.5px;color:var(--muted);text-align:center;
+  border-top:1px solid var(--rule);padding-top:var(--s4);max-width:66ch;margin:0 auto;
+}
+
+@media (max-width:820px){
+  .tiles{grid-template-columns:repeat(2,1fr)}
+  .recovery{grid-template-columns:1fr}
+  .clock-grid{grid-template-columns:1fr}
+  .masthead h1{font-size:32px}
+}
+@media (max-width:460px){
+  .wrap{padding-block:var(--s5) var(--s6)}
+  .tiles{grid-template-columns:1fr 1fr}
+  .acto-row,.acto-axis-row{grid-template-columns:46px 1fr 56px;gap:var(--s2)}
+  .tile .value{font-size:25px}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">Sleep diary &amp; circadian log</div>
+      <h1>Midsleep</h1>
+      <p class="lede">Your midsleep point &mdash; the clock time halfway between falling asleep and waking &mdash; is the single best marker of where your body clock actually sits. Log your nights and this reads the rest from it.</p>
+    </div>
+    <label class="target-field" for="target">
+      Sleep need
+      <input type="number" id="target" min="4" max="12" step="0.25" value="8">
+      hours a night
+    </label>
+  </header>
+
+  <div class="notice" id="banner" hidden></div>
+
+  <!-- ============ RECOVERY ============ -->
+  <section class="card" aria-labelledby="rec-h">
+    <div class="card-head">
+      <h2 id="rec-h">Recovery</h2>
+      <p class="sub">Weighted from five measures. Every input is shown, so you can see which one is holding the score down.</p>
+    </div>
+    <div class="recovery">
+      <div class="rec-dial">
+        <div class="rec-ring">
+          <svg viewBox="0 0 120 120" role="img" aria-labelledby="rec-alt">
+            <title id="rec-alt">Recovery score dial</title>
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--inset)" stroke-width="11"></circle>
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--ring)" stroke-width="11" stroke-opacity=".5"></circle>
+            <circle id="rec-arc" cx="60" cy="60" r="52" fill="none" stroke="var(--sleep)"
+                    stroke-width="11" stroke-linecap="round"
+                    transform="rotate(-90 60 60)"
+                    stroke-dasharray="0 327" ></circle>
+          </svg>
+          <div class="rec-centre">
+            <div class="rec-num" id="rec-num">&ndash;&ndash;</div>
+            <div class="rec-den">out of 100</div>
+          </div>
+        </div>
+        <div class="rec-verdict" id="rec-verdict">No data yet</div>
+        <p class="rec-note" id="rec-note">Log a night to start the score.</p>
+      </div>
+      <div class="rec-parts" id="rec-parts"></div>
+    </div>
+  </section>
+
+  <!-- ============ TILES ============ -->
+  <section class="tiles" aria-label="Summary">
+    <article class="card tile">
+      <div class="label">Last night</div>
+      <div class="value" id="t-last">&ndash;&ndash;</div>
+      <div class="foot" id="t-last-foot">&mdash;</div>
+    </article>
+    <article class="card tile">
+      <div class="label">14-night average</div>
+      <div class="value" id="t-avg">&ndash;&ndash;</div>
+      <div class="foot" id="t-avg-foot">&mdash;</div>
+    </article>
+    <article class="card tile">
+      <div class="label">Sleep efficiency</div>
+      <div class="value" id="t-eff">&ndash;&ndash;</div>
+      <div class="foot" id="t-eff-foot">&mdash;</div>
+    </article>
+    <article class="card tile">
+      <div class="label">Sleep debt</div>
+      <div class="value" id="t-debt">&ndash;&ndash;</div>
+      <div class="foot" id="t-debt-foot">&mdash;</div>
+      <div class="spark" id="t-debt-spark"></div>
+    </article>
+  </section>
+
+  <!-- ============ ACTOGRAM ============ -->
+  <section class="card" aria-labelledby="acto-h">
+    <div class="card-head">
+      <h2 id="acto-h">Actogram</h2>
+      <p class="sub">One row per night on an 18:00&ndash;12:00 clock axis, newest at the top. A body clock that is drifting shows up here as a staircase rather than a stack.</p>
+    </div>
+    <div class="legend">
+      <span><i class="swatch sleep"></i> Asleep</span>
+      <span><i class="swatch wake"></i> Awake in bed, falling asleep</span>
+      <span><i class="swatch mid"></i> Midsleep point</span>
+    </div>
+    <div class="acto-body">
+      <div class="acto" id="acto"></div>
+      <div class="acto-axis-row">
+        <div></div>
+        <div class="acto-axis" id="acto-axis"></div>
+        <div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BODY CLOCK ============ -->
+  <section class="card" aria-labelledby="clock-h">
+    <div class="card-head">
+      <h2 id="clock-h">Your body clock</h2>
+      <p class="sub">Midsleep anchors the whole circadian phase. From it the landmarks below are estimated with the standard chronobiology offsets.</p>
+    </div>
+    <div class="clock-grid">
+      <div>
+        <svg class="dial" id="dial" viewBox="0 0 280 280" role="img" aria-labelledby="dial-alt">
+          <title id="dial-alt">24-hour dial showing your habitual sleep window and circadian landmarks</title>
+        </svg>
+        <div class="dial-key" id="dial-key"></div>
+      </div>
+      <div class="clock-facts" id="clock-facts"></div>
+    </div>
+  </section>
+
+  <!-- ============ LOG ============ -->
+  <section class="card" aria-labelledby="form-h">
+    <div class="card-head">
+      <h2 id="form-h">Log a night</h2>
+      <p class="sub">Saving a date you have already logged replaces that entry.</p>
+    </div>
+    <form class="form" id="form" autocomplete="off">
+      <div class="field-grid">
+        <div class="field">
+          <label for="f-date">Morning of</label>
+          <input type="date" id="f-date" required>
+        </div>
+        <div class="field">
+          <label for="f-bed">Lights out</label>
+          <input type="time" id="f-bed" value="23:00" required>
+        </div>
+        <div class="field">
+          <label for="f-wake">Woke up</label>
+          <input type="time" id="f-wake" value="07:00" required>
+        </div>
+        <div class="field">
+          <label for="f-lat">Time to fall asleep <span class="hint">min</span></label>
+          <input type="number" id="f-lat" min="0" max="300" step="1" value="15">
+        </div>
+        <div class="field">
+          <label for="f-waso">Awake in the night <span class="hint">min</span></label>
+          <input type="number" id="f-waso" min="0" max="400" step="1" value="0">
+        </div>
+        <div class="field">
+          <label for="f-rhr">Resting heart rate <span class="hint">bpm, optional</span></label>
+          <input type="number" id="f-rhr" min="30" max="120" step="1" placeholder="&mdash;">
+        </div>
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label id="rest-lbl">How rested you felt</label>
+          <div class="seg" id="f-rested" role="group" aria-labelledby="rest-lbl">
+            <button type="button" data-v="1" aria-pressed="false">1</button>
+            <button type="button" data-v="2" aria-pressed="false">2</button>
+            <button type="button" data-v="3" aria-pressed="true">3</button>
+            <button type="button" data-v="4" aria-pressed="false">4</button>
+            <button type="button" data-v="5" aria-pressed="false">5</button>
+          </div>
+        </div>
+        <div class="field" style="grid-column:span 2;min-width:0">
+          <label for="f-note">Note <span class="hint">optional</span></label>
+          <input type="text" id="f-note" maxlength="120" placeholder="Late coffee, noisy street, travelled&hellip;">
+        </div>
+      </div>
+      <label class="switch" for="f-free">
+        <input type="checkbox" id="f-free">
+        Free day &mdash; no alarm, woke naturally
+        <span class="hint" style="color:var(--muted)">(needed for chronotype and social jetlag)</span>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn">Save night</button>
+        <button type="button" class="btn ghost" id="f-reset">Clear</button>
+        <span class="form-msg" id="form-msg"></span>
+      </div>
+    </form>
+  </section>
+
+  <!-- ============ TABLE ============ -->
+  <section class="card" aria-labelledby="log-h">
+    <div class="card-head">
+      <h2 id="log-h">The log</h2>
+      <p class="sub" id="log-count"></p>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Morning</th><th>Day</th><th>Lights out</th><th>Woke</th>
+            <th class="num">Asleep</th><th class="num">Efficiency</th>
+            <th class="num">Midsleep</th><th class="num">RHR</th><th class="num">Rested</th>
+            <th>Note</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="log-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Estimates only, from your own entries &mdash; not a medical device. Landmark offsets follow the published chronobiology conventions: melatonin onset about two hours before habitual sleep onset, temperature minimum about two hours before habitual wake. Chronotype uses the Munich ChronoType Questionnaire's sleep-corrected midsleep on free days.
+  </footer>
+</div>
+
+<div class="tip" id="tip" role="tooltip" aria-hidden="true"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- time helpers ----------------
+     The diary is keyed to the MORNING you woke, so every night is plotted on
+     an 18:00 -> 12:00 window. "Window minutes" = minutes since 18:00.       */
+  var WIN_START = 18 * 60;      // 18:00
+  var WIN_LEN   = 18 * 60;      // 1080 minutes across the plot
+
+  function hm(s){ var p = String(s).split(":"); return (+p[0]) * 60 + (+p[1] || 0); }
+  function toWin(mins){ var w = mins - WIN_START; return w < 0 ? w + 1440 : w; }
+  function fromWin(w){ return (((w + WIN_START) % 1440) + 1440) % 1440; }
+  function clock(mins){
+    var m = ((Math.round(mins) % 1440) + 1440) % 1440;
+    return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+  }
+  function dur(mins){
+    var s = Math.max(0, Math.round(mins));
+    return Math.floor(s / 60) + "h " + String(s % 60).padStart(2, "0") + "m";
+  }
+  function durShort(mins){
+    var s = Math.max(0, Math.round(mins));
+    return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  }
+  function clamp(v, lo, hi){ return v < lo ? lo : v > hi ? hi : v; }
+  function mean(a){ return a.length ? a.reduce(function(x, y){ return x + y; }, 0) / a.length : 0; }
+  function sd(a){
+    if (a.length < 2) return 0;
+    var m = mean(a);
+    return Math.sqrt(mean(a.map(function(v){ return (v - m) * (v - m); })));
+  }
+  function median(a){
+    if (!a.length) return 0;
+    var s = a.slice().sort(function(x, y){ return x - y; });
+    var i = Math.floor(s.length / 2);
+    return s.length % 2 ? s[i] : (s[i - 1] + s[i]) / 2;
+  }
+  function todayISO(){
+    var d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  }
+  function shiftISO(iso, days){
+    var d = new Date(iso + "T12:00:00");
+    d.setDate(d.getDate() + days);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  }
+  var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  function dowIdx(iso){ return new Date(iso + "T12:00:00").getDay(); }
+  function prettyDate(iso){
+    var d = new Date(iso + "T12:00:00");
+    return DOW[d.getDay()] + " " + String(d.getDate()).padStart(2, "0");
+  }
+
+  /* ---------------- derived night ---------------- */
+  function derive(n){
+    var bedW  = toWin(hm(n.bedtime));
+    var wakeW = toWin(hm(n.waketime));
+    if (wakeW <= bedW) wakeW += 1440;
+    var tib   = wakeW - bedW;                       // time in bed
+    var lat   = clamp(+n.latency || 0, 0, tib);     // sleep onset latency
+    var waso  = clamp(+n.awake   || 0, 0, tib - lat); // wake after sleep onset
+    var tst   = Math.max(0, tib - lat - waso);      // total sleep time
+    var onset = bedW + lat;
+    var midW  = (onset + wakeW) / 2;                // midsleep, in window minutes
+    return {
+      date: n.date, bedtime: n.bedtime, waketime: n.waketime,
+      latency: lat, awake: waso, rhr: n.rhr == null ? null : +n.rhr,
+      rested: n.rested == null ? null : +n.rested,
+      free: !!n.free, note: n.note || "",
+      bedW: bedW, wakeW: wakeW, onsetW: onset, midW: midW,
+      tib: tib, tst: tst,
+      eff: tib > 0 ? (tst / tib) * 100 : 0,
+      midClock: fromWin(midW)
+    };
+  }
+
+  /* ---------------- example fortnight ----------------
+     Shown only until the first real night is saved; never written to storage. */
+  var EXAMPLE_ROWS = [
+    [ 1, "23:20", "06:50", 18,  12, 54, 3, false, ""],
+    [ 2, "23:05", "06:45", 12,   0, 53, 4, false, ""],
+    [ 3, "00:15", "07:00", 35,  25, 58, 2, false, "Late screen time"],
+    [ 4, "22:50", "06:40", 10,   0, 52, 4, false, ""],
+    [ 5, "00:40", "09:05", 20,  10, 55, 4, true,  "No alarm"],
+    [ 6, "00:55", "09:20", 15,   0, 54, 5, true,  ""],
+    [ 7, "23:35", "06:45", 25,  18, 57, 3, false, "Wine with dinner"],
+    [ 8, "23:10", "06:50", 14,   0, 53, 4, false, ""],
+    [ 9, "23:45", "06:40", 30,  22, 59, 2, false, "Head cold"],
+    [10, "23:15", "06:45", 16,   8, 55, 3, false, ""],
+    [11, "00:35", "09:10", 18,   5, 53, 4, true,  ""],
+    [12, "00:20", "08:55", 22,  12, 54, 4, true,  ""],
+    [13, "23:25", "06:50", 20,  10, 56, 3, false, ""],
+    [14, "23:00", "06:45", 12,   0, 52, 4, false, ""]
+  ];
+  function buildExamples(){
+    var base = todayISO();
+    return EXAMPLE_ROWS.map(function(r){
+      return {
+        date: shiftISO(base, -r[0]), bedtime: r[1], waketime: r[2],
+        latency: r[3], awake: r[4], rhr: r[5], rested: r[6],
+        free: r[7], note: r[8]
+      };
+    });
+  }
+
+  /* ---------------- state ---------------- */
+  var state = {
+    nights: [],        // raw records, newest first
+    target: 8 * 60,    // sleep need, minutes
+    example: true,     // showing the sample fortnight
+    db: null,
+    saving: false
+  };
+  var $ = function(id){ return document.getElementById(id); };
+
+  /* ---------------- statistics ---------------- */
+  function stats(){
+    var all = state.nights.map(derive);                    // newest first
+    var recent = all.slice(0, 14);
+    var chron = recent.slice().reverse();                  // oldest first
+    var target = state.target;
+
+    // rolling sleep debt: deficits accumulate, surpluses pay them back
+    var debtSeries = [], running = 0;
+    chron.forEach(function(n){
+      running = Math.max(0, running + (target - n.tst));
+      debtSeries.push(running);
+    });
+    var debt7 = 0;
+    chron.slice(-7).forEach(function(n){ debt7 = Math.max(0, debt7 + (target - n.tst)); });
+
+    var mids = recent.map(function(n){ return n.midW; });
+    var regSd = sd(mids);
+
+    // free-day vs work-day midsleep (MCTQ)
+    var free = recent.filter(function(n){ return n.free; });
+    var work = recent.filter(function(n){ return !n.free; });
+    var msf = free.length ? mean(free.map(function(n){ return n.midW; })) : null;
+    var msw = work.length ? mean(work.map(function(n){ return n.midW; })) : null;
+
+    // sleep-corrected midsleep on free days: only correct when free days oversleep
+    var msfSc = null;
+    if (msf !== null) {
+      var sdF = mean(free.map(function(n){ return n.tst; }));
+      var sdWeek = mean(recent.map(function(n){ return n.tst; }));
+      msfSc = sdF > sdWeek ? msf - (sdF - sdWeek) / 2 : msf;
+    }
+    var socialJetlag = (msf !== null && msw !== null) ? Math.abs(msf - msw) : null;
+
+    // habitual timing drives the circadian landmarks
+    var habOnset = recent.length ? median(recent.map(function(n){ return n.onsetW; })) : null;
+    var habWake  = recent.length ? median(recent.map(function(n){ return n.wakeW;  })) : null;
+
+    // resting heart rate baseline, from the logged nights that have one
+    var rhrs = recent.map(function(n){ return n.rhr; }).filter(function(v){ return v != null && v > 0; });
+    var rhrBase = rhrs.length >= 3 ? median(rhrs) : null;
+
+    return {
+      all: all, recent: recent, chron: chron, target: target,
+      last: all[0] || null,
+      avgTst: mean(recent.map(function(n){ return n.tst; })),
+      avgEff: mean(recent.map(function(n){ return n.eff; })),
+      avgMid: recent.length ? mean(mids) : null,
+      regSd: regSd, debt7: debt7, debtSeries: debtSeries,
+      msf: msf, msw: msw, msfSc: msfSc, socialJetlag: socialJetlag,
+      freeCount: free.length,
+      habOnset: habOnset, habWake: habWake,
+      rhrBase: rhrBase
+    };
+  }
+
+  /* ---------------- recovery model ----------------
+     Five components, each 0-100, combined by weight. A component with no data
+     is dropped and its weight redistributed across the rest, so the score is
+     never quietly penalised for something you did not log.                   */
+  function recovery(s){
+    if (!s.last) return null;
+    var parts = [];
+
+    parts.push({
+      key: "duration", name: "Sleep duration", weight: 0.30,
+      score: clamp((s.last.tst / s.target) * 100, 0, 100),
+      detail: dur(s.last.tst) + " of " + dur(s.target)
+    });
+    parts.push({
+      key: "efficiency", name: "Sleep efficiency", weight: 0.20,
+      score: clamp(((s.last.eff - 65) / 30) * 100, 0, 100),
+      detail: s.last.eff.toFixed(0) + "% of time in bed asleep"
+    });
+    parts.push({
+      key: "debt", name: "Sleep debt, 7 nights", weight: 0.20,
+      score: clamp(100 - (s.debt7 / 600) * 100, 0, 100),
+      detail: s.debt7 < 1 ? "clear" : dur(s.debt7) + " outstanding"
+    });
+    parts.push({
+      key: "regularity", name: "Body clock regularity", weight: 0.15,
+      score: s.recent.length < 3 ? null : clamp(100 - (s.regSd / 120) * 100, 0, 100),
+      detail: s.recent.length < 3 ? "needs 3 nights" : "midsleep varies by " + Math.round(s.regSd) + " min"
+    });
+
+    var rhrScore = null, rhrDetail = "no resting heart rate logged";
+    if (s.last.rhr != null && s.rhrBase != null) {
+      var devn = s.last.rhr - s.rhrBase;
+      rhrScore = clamp(100 - (devn / 10) * 100, 0, 100);
+      rhrDetail = s.last.rhr + " bpm, baseline " + Math.round(s.rhrBase) +
+                  " (" + (devn > 0 ? "+" : "") + devn.toFixed(0) + ")";
+    } else if (s.last.rhr != null) {
+      rhrDetail = s.last.rhr + " bpm, needs 3 nights for a baseline";
+    }
+    parts.push({
+      key: "rhr", name: "Resting heart rate", weight: 0.15,
+      score: rhrScore, detail: rhrDetail
+    });
+
+    var live = parts.filter(function(p){ return p.score != null; });
+    var wsum = live.reduce(function(a, p){ return a + p.weight; }, 0);
+    var total = wsum > 0
+      ? live.reduce(function(a, p){ return a + p.score * p.weight; }, 0) / wsum
+      : 0;
+
+    return { total: Math.round(total), parts: parts, liveWeight: wsum };
+  }
+
+  function band(score){
+    if (score >= 80) return { cls: "good", label: "Recovered",
+      note: "Your body is where it should be. Hold the timing you have been keeping." };
+    if (score >= 60) return { cls: "warn", label: "Partly recovered",
+      note: "Serviceable, not restored. The weakest measure below is the one to spend effort on." };
+    return { cls: "crit", label: "Depleted",
+      note: "You are carrying a real deficit. Protect an earlier lights-out before anything else." };
+  }
+  function effBand(eff){
+    if (eff >= 85) return "good";
+    if (eff >= 75) return "warn";
+    return "crit";
+  }
+
+  /* ---------------- small svg helpers ---------------- */
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function polar(cx, cy, r, mins){
+    var a = (mins / 1440) * 2 * Math.PI - Math.PI / 2;
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  }
+  function arc(cx, cy, r, m1, m2){
+    var sweep = m2 - m1; if (sweep < 0) sweep += 1440;
+    var large = sweep > 720 ? 1 : 0;
+    var a = polar(cx, cy, r, m1), b = polar(cx, cy, r, m2);
+    return "M " + a[0].toFixed(2) + " " + a[1].toFixed(2) +
+           " A " + r + " " + r + " 0 " + large + " 1 " + b[0].toFixed(2) + " " + b[1].toFixed(2);
+  }
+  function el(tag, attrs, text){
+    var n = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  /* ---------------- recovery panel ---------------- */
+  function renderRecovery(s){
+    var r = recovery(s);
+    var arcEl = $("rec-arc"), C = 2 * Math.PI * 52;
+    if (!r) {
+      arcEl.setAttribute("stroke-dasharray", "0 " + C.toFixed(1));
+      $("rec-num").textContent = "--";
+      $("rec-verdict").textContent = "No data yet";
+      $("rec-note").textContent = "Log a night to start the score.";
+      $("rec-parts").innerHTML = "";
+      return;
+    }
+    var b = band(r.total);
+    var colour = b.cls === "good" ? "var(--good)" : b.cls === "warn" ? "var(--warn)" : "var(--crit)";
+    arcEl.setAttribute("stroke", colour);
+    arcEl.setAttribute("stroke-dasharray", (C * r.total / 100).toFixed(1) + " " + C.toFixed(1));
+    $("rec-num").textContent = r.total;
+    $("rec-verdict").textContent = b.label;
+    $("rec-note").textContent = b.note;
+
+    var host = $("rec-parts");
+    host.innerHTML = "";
+    r.parts.forEach(function(p){
+      var absent = p.score == null;
+      var row = document.createElement("div");
+      row.className = "part" + (absent ? " absent" : "");
+      var pct = absent ? 0 : Math.round(p.score);
+      row.innerHTML =
+        '<div class="part-name">' + p.name +
+          ' <span class="part-weight">' + Math.round(p.weight * 100) + '%</span></div>' +
+        '<div class="part-val">' + (absent ? "not counted" : pct) + '</div>' +
+        '<div class="part-track"><div class="part-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="part-val" style="grid-column:1/-1;color:var(--muted);font-family:var(--f-ui);font-size:12px">' +
+          p.detail + '</div>';
+      host.appendChild(row);
+    });
+  }
+
+  /* ---------------- tiles ---------------- */
+  function renderTiles(s){
+    if (!s.last) {
+      ["t-last", "t-avg", "t-eff", "t-debt"].forEach(function(id){ $(id).textContent = "--"; });
+      ["t-last-foot", "t-avg-foot", "t-eff-foot", "t-debt-foot"].forEach(function(id){ $(id).textContent = "—"; });
+      $("t-debt-spark").innerHTML = "";
+      return;
+    }
+    var L = s.last;
+    $("t-last").innerHTML = Math.floor(L.tst / 60) + '<span class="unit">h</span> ' +
+                            String(Math.round(L.tst % 60)).padStart(2, "0") + '<span class="unit">m</span>';
+    $("t-last-foot").textContent = L.bedtime + " → " + L.waketime + " · " + prettyDate(L.date);
+
+    $("t-avg").innerHTML = Math.floor(s.avgTst / 60) + '<span class="unit">h</span> ' +
+                           String(Math.round(s.avgTst % 60)).padStart(2, "0") + '<span class="unit">m</span>';
+    var gap = s.avgTst - s.target;
+    $("t-avg-foot").textContent = (gap >= 0 ? "+" : "−") + dur(Math.abs(gap)) + " vs your need";
+
+    $("t-eff").innerHTML = L.eff.toFixed(0) + '<span class="unit">%</span>';
+    var eb = effBand(L.eff);
+    $("t-eff-foot").innerHTML = '<span class="chip ' + eb + '"><i class="dot"></i>' +
+      (eb === "good" ? "Healthy" : eb === "warn" ? "Fragmented" : "Poor") +
+      '</span> <span style="color:var(--muted)">85% is the clinical mark</span>';
+
+    $("t-debt").innerHTML = s.debt7 < 1
+      ? 'None'
+      : Math.floor(s.debt7 / 60) + '<span class="unit">h</span> ' +
+        String(Math.round(s.debt7 % 60)).padStart(2, "0") + '<span class="unit">m</span>';
+    $("t-debt-foot").textContent = "accumulated over 7 nights";
+
+    // sparkline: running debt across the logged fortnight
+    var d = s.debtSeries;
+    if (d.length < 2) { $("t-debt-spark").innerHTML = ""; return; }
+    var W = 240, H = 52, pad = 3;
+    var max = Math.max(60, Math.max.apply(null, d));
+    var x = function(i){ return pad + (i / (d.length - 1)) * (W - pad * 2); };
+    var y = function(v){ return H - pad - (v / max) * (H - pad * 2); };
+    var line = d.map(function(v, i){ return (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1); }).join(" ");
+    var area = line + " L " + x(d.length - 1).toFixed(1) + " " + (H - pad) + " L " + x(0).toFixed(1) + " " + (H - pad) + " Z";
+    $("t-debt-spark").innerHTML =
+      '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" aria-hidden="true">' +
+      '<line x1="' + pad + '" y1="' + (H - pad) + '" x2="' + (W - pad) + '" y2="' + (H - pad) +
+        '" stroke="var(--grid)" stroke-width="1" fill="none"></line>' +
+      '<path d="' + area + '" fill="rgba(var(--sleep-rgb),.16)" stroke="none"></path>' +
+      '<path d="' + line + '" fill="none" stroke="var(--sleep)" stroke-width="2" ' +
+        'stroke-linejoin="round" stroke-linecap="round"></path>' +
+      '<circle cx="' + x(d.length - 1).toFixed(1) + '" cy="' + y(d[d.length - 1]).toFixed(1) +
+        '" r="3.5" fill="var(--sleep)" stroke="var(--surface)" stroke-width="2"></circle>' +
+      '</svg>';
+  }
+
+  /* ---------------- actogram ---------------- */
+  function pct(w){ return clamp((w / WIN_LEN) * 100, 0, 100); }
+
+  function renderActogram(s){
+    var host = $("acto");
+    host.innerHTML = "";
+    if (!s.recent.length) {
+      host.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:6px 0">' +
+                       'Nothing plotted yet &mdash; your first saved night appears here.</p>';
+      $("acto-axis").innerHTML = "";
+      return;
+    }
+    s.recent.forEach(function(n){
+      var row = document.createElement("div");
+      row.className = "acto-row";
+      row.tabIndex = 0;
+
+      var latW = clamp(n.onsetW, 0, WIN_LEN) - clamp(n.bedW, 0, WIN_LEN);
+      var sleepW = clamp(n.wakeW, 0, WIN_LEN) - clamp(n.onsetW, 0, WIN_LEN);
+
+      row.innerHTML =
+        '<div class="acto-date">' + prettyDate(n.date) +
+          (n.free ? ' <span class="free" title="Free day">○</span>' : '') + '</div>' +
+        '<div class="acto-track">' +
+          '<div class="acto-mid-line"></div>' +
+          (latW > 0
+            ? '<div class="bar wake" style="left:' + pct(n.bedW).toFixed(3) +
+              '%;width:calc(' + ((latW / WIN_LEN) * 100).toFixed(3) + '% - 2px)"></div>'
+            : '') +
+          '<div class="bar sleep" style="left:' + pct(n.onsetW).toFixed(3) +
+            '%;width:' + ((sleepW / WIN_LEN) * 100).toFixed(3) + '%"></div>' +
+          '<div class="bar tick" style="left:' + pct(n.midW).toFixed(3) + '%"></div>' +
+        '</div>' +
+        '<div class="acto-dur">' + durShort(n.tst) + '</div>';
+
+      bindTip(row, n);
+      host.appendChild(row);
+    });
+
+    var axis = $("acto-axis");
+    axis.innerHTML = "";
+    for (var h = 0; h <= 18; h += 3) {
+      var b = document.createElement("b");
+      b.style.left = ((h / 18) * 100).toFixed(3) + "%";
+      b.textContent = clock((WIN_START + h * 60) % 1440);
+      axis.appendChild(b);
+    }
+  }
+
+  /* ---------------- hover tooltip ---------------- */
+  var tip = $("tip");
+  function bindTip(row, n){
+    function show(ev){
+      tip.innerHTML =
+        '<div class="tip-t">' + prettyDate(n.date) + (n.free ? " · free day" : "") + '</div>' +
+        '<dl>' +
+          '<dt>Lights out</dt><dd>' + n.bedtime + '</dd>' +
+          '<dt>Fell asleep</dt><dd>' + clock(fromWin(n.onsetW)) + '</dd>' +
+          '<dt>Woke</dt><dd>' + n.waketime + '</dd>' +
+          '<dt>Asleep</dt><dd>' + dur(n.tst) + '</dd>' +
+          '<dt>Awake in bed</dt><dd>' + (n.latency + n.awake) + ' min</dd>' +
+          '<dt>Efficiency</dt><dd>' + n.eff.toFixed(0) + '%</dd>' +
+          '<dt>Midsleep</dt><dd>' + clock(n.midClock) + '</dd>' +
+          (n.rhr != null ? '<dt>Resting HR</dt><dd>' + n.rhr + ' bpm</dd>' : '') +
+        '</dl>' +
+        (n.note ? '<div style="margin-top:6px;color:var(--ink-2)">' + escapeHtml(n.note) + '</div>' : '');
+      tip.setAttribute("data-show", "1");
+      place(ev);
+    }
+    function place(ev){
+      var r = row.getBoundingClientRect();
+      var x = (ev && ev.clientX != null) ? ev.clientX + 14 : r.left + 40;
+      var y = r.top - 8;
+      var tb = tip.getBoundingClientRect();
+      if (x + tb.width > window.innerWidth - 8) x = window.innerWidth - tb.width - 8;
+      if (y + tb.height > window.innerHeight - 8) y = window.innerHeight - tb.height - 8;
+      tip.style.left = Math.max(8, x) + "px";
+      tip.style.top = Math.max(8, y) + "px";
+    }
+    function hide(){ tip.setAttribute("data-show", "0"); }
+    row.addEventListener("mouseenter", show);
+    row.addEventListener("mousemove", place);
+    row.addEventListener("mouseleave", hide);
+    row.addEventListener("focus", show);
+    row.addEventListener("blur", hide);
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* ---------------- body clock dial ----------------
+     Landmarks follow the standard offsets: melatonin onset (DLMO) about two
+     hours before habitual sleep onset, core temperature minimum (CBTmin)
+     about two hours before habitual wake. Light after CBTmin advances the
+     clock; light before it delays.                                          */
+  var CX = 140, CY = 140;
+
+  function renderDial(s){
+    var svg = $("dial");
+    while (svg.childNodes.length > 1) svg.removeChild(svg.lastChild);
+    var key = $("dial-key");
+    var h, a, b, q;
+
+    // the 24-hour track
+    svg.appendChild(el("circle", { cx: CX, cy: CY, r: 88, fill: "none",
+      stroke: "var(--inset)", "stroke-width": 26 }));
+
+    // hour ticks outside the track
+    for (h = 0; h < 24; h++) {
+      var major = h % 3 === 0;
+      a = polar(CX, CY, 104, h * 60);
+      b = polar(CX, CY, major ? 113 : 109, h * 60);
+      svg.appendChild(el("line", {
+        x1: a[0].toFixed(2), y1: a[1].toFixed(2), x2: b[0].toFixed(2), y2: b[1].toFixed(2),
+        stroke: major ? "var(--rule)" : "var(--grid)", "stroke-width": major ? 1.6 : 1, fill: "none"
+      }));
+    }
+
+    // hour numbers inside it, where they cannot collide with anything
+    for (h = 0; h < 24; h += 3) {
+      q = polar(CX, CY, 58, h * 60);
+      svg.appendChild(el("text", {
+        x: q[0].toFixed(2), y: (q[1] + 3.3).toFixed(2), "text-anchor": "middle",
+        fill: "var(--muted)", "font-size": 9.5, "font-family": "var(--f-mono)"
+      }, String(h).padStart(2, "0")));
+    }
+
+    if (s.habOnset == null || s.habWake == null || s.avgMid == null) {
+      svg.appendChild(el("text", {
+        x: CX, y: CY + 4, "text-anchor": "middle", fill: "var(--muted)",
+        "font-size": 12, "font-family": "var(--f-ui)"
+      }, "No nights logged"));
+      key.innerHTML = "";
+      $("clock-facts").innerHTML =
+        '<p style="color:var(--muted);font-size:13.5px">Save a few nights and your circadian phase is estimated here.</p>';
+      return;
+    }
+
+    var onset  = fromWin(s.habOnset);
+    var wake   = fromWin(s.habWake);
+    var mid    = fromWin(s.avgMid);
+    var dlmo   = ((onset - 120) % 1440 + 1440) % 1440;
+    var cbtmin = ((wake  - 120) % 1440 + 1440) % 1440;
+    var lightA = cbtmin, lightB = (cbtmin + 240) % 1440;
+
+    // habitual sleep band
+    svg.appendChild(el("path", {
+      d: arc(CX, CY, 88, onset, wake), fill: "none",
+      stroke: "var(--sleep)", "stroke-width": 26, "stroke-linecap": "butt"
+    }));
+
+    // the morning light window that pulls the clock earlier
+    svg.appendChild(el("path", {
+      d: arc(CX, CY, 124, lightA, lightB), fill: "none",
+      stroke: "var(--wake)", "stroke-width": 7, "stroke-linecap": "round"
+    }));
+
+    // landmark ticks across the band
+    [ { m: mid,    strong: true  },
+      { m: dlmo,   strong: false },
+      { m: cbtmin, strong: false }
+    ].forEach(function(k){
+      var p1 = polar(CX, CY, 70, k.m), p2 = polar(CX, CY, 106, k.m);
+      svg.appendChild(el("line", {
+        x1: p1[0].toFixed(2), y1: p1[1].toFixed(2), x2: p2[0].toFixed(2), y2: p2[1].toFixed(2),
+        stroke: "var(--ink)", "stroke-width": k.strong ? 2.6 : 1.4,
+        "stroke-opacity": k.strong ? .85 : .5, fill: "none"
+      }));
+    });
+
+    // centre readout
+    svg.appendChild(el("text", {
+      x: CX, y: CY - 3, "text-anchor": "middle", fill: "var(--ink)",
+      "font-size": 25, "font-weight": 600, "font-family": "var(--f-mono)"
+    }, clock(mid)));
+    svg.appendChild(el("text", {
+      x: CX, y: CY + 15, "text-anchor": "middle", fill: "var(--muted)",
+      "font-size": 9, "letter-spacing": "1.3", "font-family": "var(--f-ui)"
+    }, "MIDSLEEP"));
+
+    function row(swatch, name, val){
+      return '<div>' + swatch + '<span class="k-name">' + name + '</span>' +
+             '<span class="k-val">' + val + '</span></div>';
+    }
+    var tickSw = function(op, ht){
+      return '<i style="width:2px;height:' + ht + 'px;background:var(--ink);opacity:' + op +
+             ';margin:0 auto;border-radius:1px"></i>';
+    };
+    key.innerHTML =
+      row('<i style="background:var(--sleep)"></i>', 'Asleep', clock(onset) + '\u2013' + clock(wake)) +
+      row(tickSw(.85, 15), 'Midsleep point', clock(mid)) +
+      row(tickSw(.5, 13), 'Melatonin onset', clock(dlmo)) +
+      row(tickSw(.5, 13), 'Temperature minimum', clock(cbtmin)) +
+      row('<i style="background:var(--wake)"></i>', 'Morning light', clock(lightA) + '\u2013' + clock(lightB));
+
+    renderFacts(s, { dlmo: dlmo, cbtmin: cbtmin, lightA: lightA, lightB: lightB, mid: mid });
+  }
+
+  var CHRONO = [
+    [150, "Early"], [210, "Moderately early"], [270, "Intermediate"],
+    [330, "Moderately late"], [Infinity, "Late"]
+  ];
+  function chronotype(midClockMins){
+    var cm = midClockMins > 720 ? midClockMins - 1440 : midClockMins;
+    for (var i = 0; i < CHRONO.length; i++) if (cm < CHRONO[i][0]) return { label: CHRONO[i][1], cm: cm };
+    return { label: "Late", cm: cm };
+  }
+
+  function renderFacts(s, L){
+    var host = $("clock-facts");
+    var out = [];
+
+    out.push(
+      '<div class="fact"><div class="k">Midsleep point</div>' +
+      '<div class="v"><span class="mono">' + clock(L.mid) + '</span></div>' +
+      '<div class="d">The centre of your biological night, averaged over ' + s.recent.length +
+      ' night' + (s.recent.length === 1 ? '' : 's') + '. Every landmark below is read from it.</div></div>'
+    );
+
+    if (s.msfSc != null && s.freeCount >= 2) {
+      var mc = fromWin(s.msfSc);
+      var ct = chronotype(mc);
+      var pin = clamp(((ct.cm - 60) / 360) * 100, 0, 100);   // 01:00 .. 07:00
+      out.push(
+        '<div class="fact"><div class="k">Chronotype</div>' +
+        '<div class="v">' + ct.label + ' <span class="mono" style="color:var(--ink-2)">' + clock(mc) + '</span></div>' +
+        '<div class="d">Sleep-corrected midsleep on your free days &mdash; the MCTQ measure, taken on nights ' +
+        'when nothing woke you.</div>' +
+        '<div class="scale"><div class="scale-track"><div class="scale-pin" style="left:' + pin.toFixed(1) + '%"></div></div>' +
+        '<div class="scale-ends"><span>Early &middot; 01:00</span><span>Late &middot; 07:00</span></div></div></div>'
+      );
+    } else {
+      out.push(
+        '<div class="fact"><div class="k">Chronotype</div>' +
+        '<div class="v" style="color:var(--muted);font-size:16px">Needs ' + Math.max(0, 2 - s.freeCount) +
+        ' more free night' + (Math.max(0, 2 - s.freeCount) === 1 ? '' : 's') + '</div>' +
+        '<div class="d">Tick <em>free day</em> on nights you woke without an alarm. Only those nights show where ' +
+        'your clock actually wants to sit.</div></div>'
+      );
+    }
+
+    if (s.socialJetlag != null) {
+      var sj = Math.round(s.socialJetlag);
+      out.push(
+        '<div class="fact"><div class="k">Social jetlag</div>' +
+        '<div class="v"><span class="mono">' + durShort(sj) + '</span> ' +
+        '<span class="chip ' + (sj < 60 ? "good" : sj < 120 ? "warn" : "crit") + '"><i class="dot"></i>' +
+        (sj < 60 ? "Mild" : sj < 120 ? "Moderate" : "Heavy") + '</span></div>' +
+        '<div class="d">The gap between your free-day and work-day midsleep. Anything past an hour is the ' +
+        'equivalent of flying a timezone every week.</div></div>'
+      );
+    }
+
+    var reg = Math.round(s.regSd);
+    out.push(
+      '<div class="fact"><div class="k">Regularity</div>' +
+      '<div class="v"><span class="mono">&plusmn;' + reg + ' min</span> ' +
+      '<span class="chip ' + (reg < 30 ? "good" : reg < 60 ? "warn" : "crit") + '"><i class="dot"></i>' +
+      (reg < 30 ? "Steady" : reg < 60 ? "Loose" : "Erratic") + '</span></div>' +
+      '<div class="d">How far your midsleep wanders night to night. Regularity predicts how you feel ' +
+      'at least as well as duration does.</div></div>'
+    );
+
+    out.push(
+      '<div class="fact"><div class="k">Light timing</div>' +
+      '<div class="v" style="font-size:17px">Daylight <span class="mono" style="font-size:16px">' +
+      clock(L.lightA) + '&ndash;' + clock(L.lightB) + '</span></div>' +
+      '<div class="d">Your temperature minimum lands near <b>' + clock(L.cbtmin) + '</b>. Light after it pulls ' +
+      'your clock earlier; light in the evening pushes it later. Melatonin starts rising around <b>' +
+      clock(L.dlmo) + '</b> &mdash; dimming the room from then makes falling asleep easier.</div></div>'
+    );
+
+    host.innerHTML = out.join("");
+  }
+
+  /* ---------------- log table ---------------- */
+  function renderTable(s){
+    var body = $("log-body");
+    body.innerHTML = "";
+    $("log-count").textContent = s.all.length
+      ? s.all.length + " night" + (s.all.length === 1 ? "" : "s") + " recorded" +
+        (state.example ? " · example data" : "")
+      : "Nothing logged yet.";
+
+    if (!s.all.length) {
+      body.innerHTML = '<tr><td colspan="11" class="note" style="color:var(--muted)">' +
+                       'Your saved nights will be listed here.</td></tr>';
+      return;
+    }
+    s.all.forEach(function(n){
+      var eb = effBand(n.eff);
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td>' + n.date + '</td>' +
+        '<td>' + DOW[dowIdx(n.date)] + (n.free ? ' ○' : '') + '</td>' +
+        '<td>' + n.bedtime + '</td>' +
+        '<td>' + n.waketime + '</td>' +
+        '<td class="num">' + durShort(n.tst) + '</td>' +
+        '<td class="num"><span class="chip ' + eb + '"><i class="dot"></i>' + n.eff.toFixed(0) + '%</span></td>' +
+        '<td class="num">' + clock(n.midClock) + '</td>' +
+        '<td class="num">' + (n.rhr != null ? n.rhr : "—") + '</td>' +
+        '<td class="num">' + (n.rested != null ? n.rested + "/5" : "—") + '</td>' +
+        '<td class="note">' + escapeHtml(n.note || "") + '</td>' +
+        '<td class="num"><button class="link-btn" type="button" data-del="' + n.date +
+          '" aria-label="Delete the night of ' + n.date + '">Delete</button></td>';
+      body.appendChild(tr);
+    });
+  }
+
+  /* ---------------- render all ---------------- */
+  function render(){
+    var s = stats();
+    renderRecovery(s);
+    renderTiles(s);
+    renderActogram(s);
+    renderDial(s);
+    renderTable(s);
+
+    var banner = $("banner");
+    if (state.example) {
+      banner.hidden = false;
+      banner.innerHTML = '<b>Example fortnight.</b> These nights are here so the diary reads as it will once ' +
+        'it is yours. Save your first night and they clear.';
+    } else if (!state.db) {
+      banner.hidden = false;
+      banner.innerHTML = '<b>Not being saved.</b> Storage is unavailable in this view, so nights you add stay ' +
+        'only until you close the page.';
+    } else {
+      banner.hidden = true;
+    }
+  }
+
+  /* ---------------- storage ---------------- */
+  function msg(text, isErr){
+    var m = $("form-msg");
+    m.textContent = text;
+    m.className = "form-msg" + (isErr ? " err" : "");
+    if (text) window.setTimeout(function(){
+      if (m.textContent === text) { m.textContent = ""; m.className = "form-msg"; }
+    }, 4000);
+  }
+
+  function connect(){
+    var p = (window.claude && typeof window.claude.use === "function")
+      ? window.claude.use("db")
+      : Promise.resolve(null);
+
+    p.then(function(db){
+      if (!db) { render(); return; }
+      state.db = db;
+
+      db.collection("nights").orderBy("date", "desc").limit(400).onSnapshot(function(snap){
+        var rows = snap.docs.map(function(d){
+          var v = Object.assign({}, d.data());
+          if (!v.date) v.date = d.id;
+          return v;
+        }).filter(function(v){ return v.bedtime && v.waketime; });
+
+        if (rows.length) { state.nights = rows; state.example = false; }
+        else { state.nights = buildExamples(); state.example = true; }
+        render();
+      }, function(){
+        state.db = null;
+        msg("Lost the connection to storage — changes are no longer being saved.", true);
+        render();
+      });
+
+      db.doc("settings/prefs").onSnapshot(function(snap){
+        if (!snap.exists) return;
+        var t = snap.data().targetMinutes;
+        if (typeof t === "number" && t >= 240 && t <= 720) {
+          state.target = t;
+          $("target").value = String(t / 60);
+          render();
+        }
+      }, function(){});
+    }).catch(function(){ render(); });
+  }
+
+  function saveNight(rec){
+    if (state.db) {
+      state.saving = true;
+      state.db.doc("nights/" + rec.date).set(rec).then(function(){
+        state.saving = false;
+        msg("Saved the night of " + rec.date + ".");
+      }).catch(function(e){
+        state.saving = false;
+        msg(e && e.code === "quota_exceeded"
+          ? "The diary is full. Delete some older nights to make room."
+          : "Could not save that night. " + ((e && e.message) || ""), true);
+      });
+      return;
+    }
+    if (state.example) { state.nights = []; state.example = false; }
+    state.nights = state.nights.filter(function(n){ return n.date !== rec.date; });
+    state.nights.push(rec);
+    state.nights.sort(function(a, b){ return a.date < b.date ? 1 : -1; });
+    render();
+    msg("Saved for this session only.");
+  }
+
+  function deleteNight(date){
+    if (state.example) { msg("That is an example night — save one of your own to replace them."); return; }
+    if (state.db) {
+      state.db.doc("nights/" + date).delete().catch(function(){ msg("Could not delete that night.", true); });
+      return;
+    }
+    state.nights = state.nights.filter(function(n){ return n.date !== date; });
+    render();
+  }
+
+  /* ---------------- form ---------------- */
+  var restedValue = 3;
+
+  $("f-rested").addEventListener("click", function(ev){
+    var b = ev.target.closest("button[data-v]");
+    if (!b) return;
+    restedValue = +b.dataset.v;
+    Array.prototype.forEach.call(this.querySelectorAll("button"), function(x){
+      x.setAttribute("aria-pressed", String(+x.dataset.v === restedValue));
+    });
+  });
+
+  $("f-date").addEventListener("change", function(){
+    var d = dowIdx(this.value);
+    if (!isNaN(d)) $("f-free").checked = (d === 0 || d === 6);
+  });
+
+  $("target").addEventListener("change", function(){
+    var hrs = clamp(parseFloat(this.value) || 8, 4, 12);
+    this.value = String(hrs);
+    state.target = Math.round(hrs * 60);
+    if (state.db) state.db.doc("settings/prefs").set({ targetMinutes: state.target }).catch(function(){});
+    render();
+  });
+
+  $("form").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var date = $("f-date").value;
+    var bed  = $("f-bed").value;
+    var wake = $("f-wake").value;
+    if (!date || !bed || !wake) { msg("A date, a lights-out time and a wake time are needed.", true); return; }
+
+    var probe = derive({ date: date, bedtime: bed, waketime: wake, latency: 0, awake: 0 });
+    if (probe.tib < 30) { msg("That is under half an hour in bed — check the times.", true); return; }
+    if (probe.tib > 16 * 60) { msg("That is over sixteen hours in bed — check the times.", true); return; }
+
+    var lat  = clamp(parseInt($("f-lat").value, 10) || 0, 0, 300);
+    var waso = clamp(parseInt($("f-waso").value, 10) || 0, 0, 400);
+    if (lat + waso >= probe.tib) { msg("Time awake cannot exceed the time you spent in bed.", true); return; }
+
+    var rhrRaw = parseInt($("f-rhr").value, 10);
+    var rec = {
+      date: date, bedtime: bed, waketime: wake,
+      latency: lat, awake: waso,
+      rhr: isNaN(rhrRaw) ? null : clamp(rhrRaw, 30, 120),
+      rested: restedValue,
+      free: $("f-free").checked,
+      note: $("f-note").value.slice(0, 120)
+    };
+    saveNight(rec);
+    $("f-note").value = "";
+    $("f-rhr").value = "";
+  });
+
+  $("f-reset").addEventListener("click", function(){
+    $("form").reset();
+    restedValue = 3;
+    Array.prototype.forEach.call($("f-rested").querySelectorAll("button"), function(x){
+      x.setAttribute("aria-pressed", String(+x.dataset.v === 3));
+    });
+    setDefaultDate();
+    msg("");
+  });
+
+  $("log-body").addEventListener("click", function(ev){
+    var b = ev.target.closest("button[data-del]");
+    if (b) deleteNight(b.dataset.del);
+  });
+
+  function setDefaultDate(){
+    var t = todayISO();
+    $("f-date").value = t;
+    $("f-date").max = t;
+    var d = dowIdx(t);
+    $("f-free").checked = (d === 0 || d === 6);
+  }
+
+  /* ---------------- boot ---------------- */
+  setDefaultDate();
+  state.nights = buildExamples();
+  state.example = true;
+  render();
+  connect();
+})();
+</script>
