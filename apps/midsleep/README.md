@@ -14,6 +14,23 @@ nothing about what you did yesterday; a habit tracker logs your behaviour but
 knows nothing about your body clock. Holding both lets the app measure **which
 habits actually move your sleep** — the one thing neither half can do alone.
 
+## Who can see what
+
+The page is gated by claude.ai itself: declaring the `db` capability makes the
+artifact organisation-internal, so everyone who opens it is a signed-in member
+of the owner's organisation. That is real, server-enforced authentication, and
+the app implements none of it.
+
+What the app adds is **separate profiles**, so several people each keep their own
+nights, habits and goals. That is data separation, not access control —
+**anyone who can open the page can open any profile.** The chooser says so.
+
+Per-viewer *private* data would need the `user` capability, which gives the page
+the viewer's real identity and unlocks the store's `data/users/{self}` subtrees.
+It is not enabled for this account, so it is not built. A password box checked in
+client-side JavaScript against a database every viewer can read would be theatre,
+not security, and is deliberately absent.
+
 ## Screens
 
 **Entry screen.** Name, usual sleep time, usual wake time — with a dial that
@@ -130,9 +147,22 @@ Estimates from self-reported entries, not a medical device.
 
 ## Storage
 
-Uses the artifact `db` capability: one document per night at `nights/<YYYY-MM-DD>`,
-plus `settings/prefs` for your sleep need `settings/profile` for your name and estimated schedule, and `goals/<metric>` for each target. A document may hold habits with no sleep times yet (tonight's ticks); those are ignored by every statistic until the morning entry completes them. Declaring `db` makes the artifact
-organisation-internal — it cannot be shared publicly.
+Uses the artifact `db` capability, keyed per person:
+
+    profiles/<pid>                      name, estimated sleep and wake times
+    profiles/<pid>/nights/<YYYY-MM-DD>  one document per night
+    profiles/<pid>/goals/<metric>       one document per target
+    profiles/<pid>/prefs/main           sleep need
+
+A night document may hold habits with no sleep times yet (tonight's ticks);
+those are ignored by every statistic until the morning entry completes them.
+Declaring `db` makes the artifact organisation-internal — it cannot be shared
+publicly.
+
+Data saved under the older single-user layout (`nights/*`, `settings/profile`,
+`settings/prefs`, `goals/*`) is migrated into the first profile on load. The
+originals are left in place rather than deleted, so a migration that fails
+part-way costs nothing.
 
 Until the first night is saved the page shows a clearly-marked example fortnight,
 rendered client-side only and never written to storage.
