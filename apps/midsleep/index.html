@@ -778,6 +778,27 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       </table>
     </div>
   </section>
+  <!-- ============ EXPORT / IMPORT ============ -->
+  <section class="card" aria-labelledby="dat-h">
+    <div class="card-head">
+      <h2 id="dat-h">Your diary, as a file</h2>
+      <p class="sub">Every person, night, habit and goal in one file. Keep it as a backup, or use it to carry your nights between two copies of Midsleep &mdash; they each keep their own diary and do not sync.</p>
+    </div>
+    <div class="dl-body">
+      <div class="dl-row">
+        <div class="dl-text">
+          <h3>Export or import</h3>
+          <p id="dat-note"></p>
+        </div>
+        <div class="dl-actions">
+          <button type="button" class="btn ghost" id="dl-data">Export</button>
+          <button type="button" class="btn ghost" id="dl-import-btn">Import</button>
+          <input type="file" id="dl-import" accept="application/json,.json" hidden>
+        </div>
+      </div>
+      <p class="form-msg" id="dat-msg"></p>
+    </div>
+  </section>
   </div>
 
   <div class="panel" id="tab-clock" role="tabpanel" aria-labelledby="tab-btn-clock" hidden>
@@ -895,18 +916,6 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
           <p>Everything &mdash; the energy model, the actogram, the body clock, habits and goals &mdash; in a single file of about <span class="mono" id="dl-size">&mdash;</span>. Open it by double-clicking and it runs, offline, with the microphone available. It keeps its own diary in whichever browser opens it. <span id="dl-file-note"></span></p>
         </div>
         <button type="button" class="btn" id="dl-app">Download the app</button>
-      </div>
-
-      <div class="dl-row">
-        <div class="dl-text">
-          <h3>Your diary, as data</h3>
-          <p>Every person, night, habit and goal in one JSON file. Use it to move between this page and an offline copy, or just to keep a backup. Importing adds everyone in the file, replacing any profile it already matches.</p>
-        </div>
-        <div class="dl-actions">
-          <button type="button" class="btn ghost" id="dl-data">Export</button>
-          <button type="button" class="btn ghost" id="dl-import-btn">Import</button>
-          <input type="file" id="dl-import" accept="application/json,.json" hidden>
-        </div>
       </div>
 
       <p class="dl-note" id="dl-note"></p>
@@ -2853,10 +2862,13 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 
   /* ---------------- download, export, import ---------------- */
   function dlMsg(text, isErr){
-    var m = $("dl-msg");
-    m.textContent = text;
-    m.className = "form-msg" + (isErr ? " err" : "");
-    if (text && !isErr) window.setTimeout(function(){ if (m.textContent === text) m.textContent = ""; }, 5000);
+    ["dl-msg", "dat-msg"].forEach(function(id){
+      var m = $(id);
+      if (!m) return;
+      m.textContent = text;
+      m.className = "form-msg" + (isErr ? " err" : "");
+      if (text && !isErr) window.setTimeout(function(){ if (m.textContent === text) m.textContent = ""; }, 5000);
+    });
   }
 
   // Inside the viewer the sandbox blocks a page from downloading anything, so
@@ -3077,6 +3089,9 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       ? "On an iPhone the file lands in Files \u2014 useful as a backup, but iOS will not run it as an app; use the Home Screen route above."
       : "";
     $("dl-size").textContent = Math.max(1, Math.round(SELF_SOURCE.length / 1024)) + " KB";
+    $("dat-note").innerHTML = state.db
+      ? "This page saves to your Claude account. A downloaded or installed copy saves to whichever browser opens it \u2014 exporting here and importing there is how a night crosses between them."
+      : "Importing adds everyone in the file, replacing any profile it already matches.";
     $("dl-note").innerHTML = state.db
       ? '<b>Two separate diaries.</b> This page saves to your Claude account; a downloaded copy saves to whichever browser opens it. ' +
         'They do not sync \u2014 move data across with Export and Import. The offline copy also falls back to system fonts, ' +
@@ -3132,8 +3147,19 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       'Separate profiles keep different people\'s sleep data apart \u2014 they do not keep it private from one another. ' +
       'The page itself is already limited to people signed in to your organisation.';
   }
+  // Inside the viewer the Download tab is the way out to a real app; in a browser
+  // at its own address it carries the install steps. In the installed app, and in
+  // a saved copy, it would only offer what you are already running, so it goes.
+  function tabOffered(t){
+    if (t !== "app") return true;
+    if (isFramed()) return true;
+    return isHosted() && !isInstalled();
+  }
+  function applyTabVisibility(){
+    TABS.forEach(function(t){ $("tab-btn-" + t).hidden = !tabOffered(t); });
+  }
   function setTab(id, quiet){
-    if (TABS.indexOf(id) < 0) id = "today";
+    if (TABS.indexOf(id) < 0 || !tabOffered(id)) id = "today";
     activeTab = id;
     TABS.forEach(function(t){
       $("tab-" + t).hidden = t !== id;
@@ -3266,6 +3292,12 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     } else if (s.clockSource === "estimate") {
       banner.hidden = false;
       banner.innerHTML = '<b>Running on your estimate.</b> Your peaks, dip and body clock are live below. Log your first night to switch them to measured timing and unlock recovery, the actogram and habit effects.';
+    } else if (!isFramed() && isHosted() && !isInstalled() && !installHintDone()) {
+      banner.hidden = false;
+      banner.innerHTML = '<b>Put Midsleep on your Home Screen.</b> ' +
+        (isIOS ? 'Share \u2192 Add to Home Screen. It then opens full screen, works with no connection, and can record your night.'
+               : 'Your browser\u2019s menu offers Install. It then opens in its own window and works with no connection.') +
+        ' <button type="button" class="link-plain" id="hint-done">Got it</button>';
     } else {
       banner.hidden = true;
     }
@@ -3700,8 +3732,9 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   $("tabs").addEventListener("keydown", function(ev){
     if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
     ev.preventDefault();
-    var i = TABS.indexOf(activeTab);
-    var next = TABS[(i + (ev.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length];
+    var open = TABS.filter(tabOffered);
+    var i = open.indexOf(activeTab);
+    var next = open[(i + (ev.key === "ArrowRight" ? 1 : open.length - 1)) % open.length];
     setTab(next);
     $("tab-btn-" + next).focus();
   });
@@ -3739,7 +3772,16 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     setupOpen = false;
     render();
   });
+  var HINTKEY = "midsleep.installhint";
+  function installHintDone(){
+    try { return window.localStorage.getItem(HINTKEY) === "1"; } catch (e) { return false; }
+  }
   $("banner").addEventListener("click", function(ev){
+    if (ev.target.id === "hint-done") {
+      try { window.localStorage.setItem(HINTKEY, "1"); } catch (e) {}
+      $("banner").hidden = true;
+      return;
+    }
     if (ev.target.id === "demo-setup") { setupOpen = true; render(); window.scrollTo({ top: 0 }); $("s-name").focus(); }
   });
 
@@ -3867,6 +3909,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 
   /* ---------------- boot ---------------- */
   buildFormHabits();
+  applyTabVisibility();
   renderRecorder();
   probeSample();
   offerResume();
