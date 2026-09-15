@@ -187,9 +187,10 @@ press, never on load or a timer.
 When `sample` is unavailable — outside the Claude viewer, or consent declined —
 the measured half still renders in full and the read says so.
 
-The interface calls it the Midsleep agent rather than Claude, but the card states
-plainly that it runs on Claude and spends the viewer's own usage: naming the
-feature is fine, hiding what it costs is not.
+The interface calls it the Midsleep agent rather than Claude. The card carries no
+note about usage, at the owner's request; the platform still shows its own
+consent prompt on the first read of each session, so a read is never taken
+without the viewer agreeing to it.
 
 ### Restlessness
 
