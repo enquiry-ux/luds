@@ -831,15 +831,16 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   <section class="card" aria-labelledby="bra-h">
     <div class="card-head">
       <h2 id="bra-h">The read</h2>
-      <p class="sub">The Midsleep agent reads the figures above and tells you what they mean. It is handed the measurements and told not to invent any &mdash; every number it quotes is one this page computed.</p>
+      <p class="sub">What the figures above actually mean, and what to do about them. Every number quoted is one this page computed.</p>
     </div>
     <div class="br-body">
+      <div id="br-out" hidden></div>
       <div class="br-actions-row">
-        <button type="button" class="btn" id="br-go">Read my night</button>
+        <button type="button" class="btn ghost" id="br-go" hidden>Deeper read with the agent</button>
         <button type="button" class="btn ghost" id="br-stop" hidden>Stop</button>
+        <button type="button" class="link-plain" id="br-swap" hidden></button>
         <span class="form-msg" id="br-msg"></span>
       </div>
-      <div id="br-out" hidden></div>
     </div>
   </section>
   </div>
@@ -2404,6 +2405,133 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     return facts;
   }
 
+  /* ---------------- the built-in read ----------------
+     Rule-based, computed from the same figures, costing nothing and needing no
+     network. This is what ships in the app; the agent is an optional upgrade
+     on top of it, so a downloaded copy is not missing a feature.            */
+  function plural(n, one, many){ return n + " " + (n === 1 ? one : many); }
+  function durWords(m){
+    var v = Math.max(0, Math.round(m));
+    return v < 60 ? plural(v, "minute", "minutes") : dur(v);
+  }
+  function latencyWord(m){
+    return m < 10 ? "which is almost at once" : m < 20 ? "which is quick"
+         : m < 30 ? "which is about what most people take" : m < 45 ? "which is on the slow side"
+         : "which is a long time";
+  }
+
+  function localBriefing(s, hs){
+    var L = s.last;
+    if (!L) return null;
+    var a = nightAnalysis(L), r = a ? restlessness(a) : null;
+    var M = energyModel(s);
+    var shortBy = Math.round(s.target - L.tst);
+    var eff = Math.round(L.eff);
+    var fx = habitEffects(s).filter(function(f){ return f.enough; })
+      .sort(function(x, y){ return x.dTst - y.dTst; });
+    var worst = fx.length && fx[0].dTst <= -15 ? fx[0] : null;
+    var best  = fx.length && fx[fx.length - 1].dTst >= 15 ? fx[fx.length - 1] : null;
+
+    /* ---- headline: whatever actually mattered about this night ---- */
+    var headline;
+    if (r && r.verdict === "restless")
+      headline = dur(L.tst) + " asleep, but broken \u2014 you stirred " + plural(r.stirs, "time", "times") + ".";
+    else if (shortBy > 60 && r && r.verdict !== "settled")
+      headline = "Short and unsettled \u2014 " + dur(L.tst) + ", " + durWords(shortBy) + " under your need.";
+    else if (shortBy > 60)
+      headline = "You came up " + dur(shortBy) + " short of your " + dur(s.target) + ".";
+    else if (eff < 80)
+      headline = dur(L.tib) + " in bed, but only " + eff + "% of it asleep.";
+    else if (r && r.verdict === "unsettled")
+      headline = dur(L.tst) + " asleep, though the night was broken up a little.";
+    else if (shortBy <= 30 && eff >= 85)
+      headline = "A good night \u2014 " + dur(L.tst) + " asleep and settled.";
+    else
+      headline = dur(L.tst) + " asleep at " + eff + "% efficiency.";
+
+    /* ---- the night ---- */
+    var night = [];
+    night.push("Lights out at " + L.bedtime + " and asleep by " + clock(fromWin(L.onsetW)) +
+      " \u2014 " + durWords(L.latency) + " to drop off, " + latencyWord(L.latency) + ".");
+    night.push("You were up at " + L.waketime + ", which is " + dur(L.tst) + " asleep out of " +
+      dur(L.tib) + " in bed, an efficiency of " + eff + "%" +
+      (eff >= 85 ? ", comfortably past the 85% mark." : eff >= 75 ? ", a little under the 85% mark." :
+       " \u2014 well under the 85% mark, so a good deal of your night was spent awake in bed."));
+    if (shortBy > 30) night.push("That leaves you " + durWords(shortBy) + " under your sleep need.");
+    else if (shortBy < -30) night.push("That is " + durWords(-shortBy) + " more than your sleep need, which is no bad thing.");
+
+    /* ---- restless ---- */
+    var restless;
+    if (r) {
+      var why = (r.stirs === 0 ? "You did not stir once all night"
+                                : "You stirred " + plural(r.stirs, "time", "times")) +
+        " and your longest unbroken stretch was " + durWords(r.longestUnbrokenMin) + ".";
+      why += r.verdict === "settled"
+        ? " That is consolidated sleep \u2014 the kind that actually restores you."
+        : r.verdict === "unsettled"
+          ? " Not bad, but the night came in pieces rather than one block, which tends to leave you flatter than the hours suggest."
+          : " Sleep that broken does less for you than the total hours imply, so expect to feel worse than the number looks.";
+      restless = { verdict: r.verdict, why: why };
+    } else {
+      restless = { verdict: "not measured",
+        why: "This night was entered by hand rather than recorded, so there is no movement to read. The " +
+             plural(L.awake, "minute", "minutes") + " you logged awake is all there is to go on \u2014 record a night and this fills in properly." };
+    }
+
+    /* ---- the day ---- */
+    var day = [];
+    if (M) {
+      day.push("Today's ceiling is " + M.potential + " out of 100 \u2014 " + energyBand(M.potential).label.toLowerCase() + ".");
+      day.push("Your sharp window runs " + clock(M.toClock(M.peakSpan.from)) + " to " + clock(M.toClock(M.peakSpan.to)) +
+        ", and the dip lands around " + clock(M.toClock(M.dipSpan.from)) + ".");
+      day.push(s.debt7 > 60
+        ? dur(s.debt7) + " of sleep debt is what is holding that ceiling down."
+        : "There is no real sleep debt dragging on it.");
+    } else {
+      day.push("Set your usual sleep and wake times and the day ahead gets mapped out here too.");
+    }
+
+    /* ---- what to do: only rules that apply, most useful first ---- */
+    var actions = [];
+    if (M) actions.push({ when: clock(M.toClock(M.peakSpan.from)) + "\u2013" + clock(M.toClock(M.peakSpan.to)),
+      what: "Put the hardest thing you have here.",
+      why: "It is the sharpest you will be today, and it does not come back." });
+    if (worst) actions.push({ when: "Today", what: "Skip " + worst.habit.label.toLowerCase() + ".",
+      why: "Your own nights with it average " + Math.abs(Math.round(worst.dTst)) + " minutes less sleep than the nights without." });
+    if (M) actions.push({ when: clock(M.toClock(M.dipSpan.from)) + "\u2013" + clock(M.toClock(M.dipSpan.to)),
+      what: "Get outside, or walk.", why: "Daylight clears the dip faster than coffee, and coffee this late costs you tonight." });
+    if (s.debt7 > 60 && M) actions.push({ when: "Tonight, by " + clock((M.bedClock - Math.min(60, Math.round(s.debt7)) + 1440) % 1440),
+      what: "Go down earlier than usual.", why: "You are carrying " + dur(s.debt7) + ", and an earlier lights-out is the only thing that clears it." });
+    if (L.latency > 30 && M) actions.push({ when: "From " + clock(M.dlmo), what: "Dim the lights and put screens down.",
+      why: "It took you " + plural(L.latency, "minute", "minutes") + " to fall asleep; melatonin starts rising around then." });
+    if (s.recent.length >= 3 && s.regSd > 60 && M) actions.push({ when: "Tonight", what: "Aim for the same lights-out as last night.",
+      why: "Your midsleep is wandering by about " + Math.round(s.regSd) + " minutes, which costs more than the odd short night." });
+    if (!actions.length && M) actions.push({ when: "From " + clock(M.dlmo), what: "Start winding down.",
+      why: "Lights out near " + clock(M.bedClock) + " keeps your clock where it is." });
+    actions = actions.slice(0, 4);
+
+    /* ---- the single biggest lever ---- */
+    var watch;
+    if (worst) watch = worst.habit.label + " is the biggest single thing in your data \u2014 " +
+      Math.abs(Math.round(worst.dTst)) + " minutes a night across " + worst.nYes + " nights with it and " + worst.nNo + " without.";
+    else if (r && r.verdict === "restless") watch = "Consolidation is the issue, not hours: nothing longer than " +
+      durWords(r.longestUnbrokenMin) + " unbroken. A cooler, darker, quieter room is the usual first thing to try.";
+    else if (s.debt7 > 60) watch = "The debt is the thing to fix: " + dur(s.debt7) +
+      " over seven nights. One long lie-in will not clear it; a run of earlier nights will.";
+    else if (s.recent.length >= 3 && s.regSd > 60) watch = "Your midsleep moves by about " + Math.round(s.regSd) +
+      " minutes night to night. Steadying that tends to pay off more than chasing extra hours.";
+    else if (eff < 85) watch = "Efficiency is the weak point at " + eff +
+      "%. That is usually about time spent in bed awake rather than time asleep.";
+    else if (r && r.verdict === "unsettled") watch = "The hours are there, but the night came in pieces \u2014 " +
+      durWords(r.longestUnbrokenMin) + " was the longest unbroken run. Worth watching whether that repeats.";
+    else if (best) watch = best.habit.label + " is working for you \u2014 " + Math.round(best.dTst) +
+      " minutes more sleep on the nights you manage it. Worth protecting.";
+    else watch = "Nothing is obviously wrong. Holding the timing you have is the useful thing now.";
+
+    return { headline: headline, night: night.join(" "), restless: restless,
+             day: day.join(" "), actions: actions, watch: watch };
+  }
+
   var BRIEF_SCHEMA =
     '{"headline":string,"night":string,"restless":{"verdict":string,"why":string},' +
     '"day":string,"actions":[{"when":string,"what":string,"why":string}],"watch":string}';
@@ -2443,6 +2571,13 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   }
 
   var briefCtl = null;
+  var briefView = {};          // per date: "auto" or "agent"
+  var sampleFn;                // undefined = not yet known, null = unavailable
+  function probeSample(){
+    if (!(window.claude && typeof window.claude.use === "function")) { sampleFn = null; return; }
+    window.claude.use("sample").then(function(f){ sampleFn = f || null; render(); })
+      .catch(function(){ sampleFn = null; render(); });
+  }
   function briefKey(){ return s_lastDate; }
   var s_lastDate = null;
 
@@ -2525,10 +2660,18 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
              '<div class="wv">' + w[1] + '</div><div class="wd">' + w[3] + '</div></div>';
     }).join("") : '<p class="br-none">Set your schedule to see today mapped out.</p>';
 
-    // ---- the read ----
-    var saved = loadBriefing(L.date);
-    if (saved && saved.data) { paintBriefing(saved); $("br-go").textContent = "Read it again"; }
-    else { $("br-out").hidden = true; $("br-go").textContent = "Read my night"; }
+    // ---- the read: the built-in one always, the agent's when asked for ----
+    var auto = localBriefing(s, hs);
+    var agent = loadBriefing(L.date);
+    var showAgent = !!(agent && agent.data && briefView[L.date] !== "auto");
+    paintBriefing(showAgent
+      ? { data: agent.data, source: "agent", generated: agent.generated }
+      : { data: auto, source: "auto" });
+
+    $("br-go").hidden = !sampleFn;
+    $("br-go").textContent = agent ? "Ask the agent again" : "Deeper read with the agent";
+    $("br-swap").hidden = !(agent && agent.data);
+    $("br-swap").textContent = showAgent ? "Show Midsleep's own read" : "Show the agent's read";
   }
 
   function renderStripInto(svg, axis, a, startMs){
@@ -2559,8 +2702,9 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   }
 
   function paintBriefing(saved){
-    var d = saved.data;
+    var d = saved && saved.data;
     var out = $("br-out");
+    if (!d) { out.hidden = true; return; }
     out.hidden = false;
     var parts = [];
     parts.push('<div class="br-block"><div class="br-head">' + escapeHtml(d.headline || "") + '</div></div>');
@@ -2579,8 +2723,10 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
         }).join("") + '</div>');
     }
     if (d.watch) parts.push('<div class="br-block"><p class="br-watch"><b>Worth watching.</b> ' + escapeHtml(d.watch) + '</p></div>');
-    parts.push('<div class="br-block"><p class="br-stamp">Written ' +
-      escapeHtml(new Date(saved.generated).toLocaleString()) + ' from the figures above.</p></div>');
+    parts.push('<div class="br-block"><p class="br-stamp">' + (saved.source === "agent"
+      ? "Written by the Midsleep agent, " + escapeHtml(new Date(saved.generated).toLocaleString()) + "."
+      : "Worked out by Midsleep from the figures above. No network, no account, nothing spent.") +
+      '</p></div>');
     out.innerHTML = parts.join("");
   }
 
@@ -2610,12 +2756,12 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       if (!data || typeof data !== "object") throw { code: "invalid_json" };
       var saved = { date: date, generated: new Date().toISOString(), data: data };
       storeBriefing(date, saved);
-      paintBriefing(saved);
+      briefView[date] = "agent";
+      render();
       brMsg("");
-      $("br-go").textContent = "Read it again";
     }).catch(function(e){
       var c = e && e.code;
-      $("br-out").hidden = true;
+      render();                       // the built-in read comes back rather than a blank card
       if (c === "cancelled") { brMsg(""); return; }
       if (c === "not_granted" || c === "not_declared" || c === "sampling_disabled" || c === "capability_disabled")
         brMsg("The Midsleep agent could not be reached, so the read is off. Everything measured above still stands.", true);
@@ -3267,6 +3413,11 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 
   $("br-go").addEventListener("click", function(){ askForBriefing(); });
   $("br-stop").addEventListener("click", function(){ if (briefCtl) briefCtl.abort(); });
+  $("br-swap").addEventListener("click", function(){
+    if (!s_lastDate) return;
+    briefView[s_lastDate] = briefView[s_lastDate] === "auto" ? "agent" : "auto";
+    render();
+  });
 
   $("rec-go").addEventListener("click", function(){ startRecording(); });
   $("rec-stop").addEventListener("click", function(){ stopRecording(); });
@@ -3489,6 +3640,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 
   /* ---------------- boot ---------------- */
   buildFormHabits();
+  probeSample();
   offerResume();
   setTab(activeTab);
   setDefaultDate();

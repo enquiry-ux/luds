@@ -170,27 +170,19 @@ split is the point:
 efficiency, sleep onset, wake, the restlessness verdict, the strip chart of the
 night, and today's peak / dip / second wind / wind-down.
 
-**Interpreted** — the *Midsleep agent* (the app's name in the interface for the
-`sample` capability, which runs on the viewer's own Claude account) is handed
-those figures and asked what they mean. It is told explicitly not to invent, re-derive or
-estimate any number, because a language model asked for arithmetic will invent
-it. Every figure it quotes is one this page computed. It returns JSON
-(`headline`, `night`, `restless`, `day`, `actions[]`, `watch`) which is rendered
-into the app's own components rather than dumped as prose, and is told it is not
-a doctor.
+**Interpreted** — a rule-based read written from those same figures: headline,
+what the night looked like, a restlessness verdict, the day ahead, two to four
+concrete actions, and the single biggest lever. It costs nothing, needs no
+network and no account, and is what ships in the app. It works in the downloaded
+and installed copies exactly as it does here.
 
-Briefings are cached per morning at `profiles/<pid>/briefings/<date>`, so opening
-the tab again replays the stored read rather than spending the viewer's usage
-twice. Sampling costs the *viewer's* Claude allowance, so it runs on an explicit
-press, never on load or a timer.
-
-When `sample` is unavailable — outside the Claude viewer, or consent declined —
-the measured half still renders in full and the read says so.
-
-The interface calls it the Midsleep agent rather than Claude. The card carries no
-note about usage, at the owner's request; the platform still shows its own
-consent prompt on the first read of each session, so a read is never taken
-without the viewer agreeing to it.
+**Optionally deeper** — where the `sample` capability exists, a *Deeper read with
+the agent* button asks Claude for a more fluent version of the same brief. It is
+handed the measurements and told not to invent any number. Agent reads are cached
+per morning at `profiles/<pid>/briefings/<date>`; a swap link moves between the
+two, and the card always says which one is on screen. The agent button is hidden
+entirely where the capability is absent, so a standalone copy shows no dead
+control.
 
 ### Restlessness
 
