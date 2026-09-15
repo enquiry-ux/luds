@@ -2,7 +2,6 @@
   "name": "Midsleep — sleep, body clock and habits",
   "short_name": "Midsleep",
   "description": "Your body clock decides when you will have energy; your habits decide how much. Tracks both and shows which habits move your sleep.",
-  "id": "/midsleep/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

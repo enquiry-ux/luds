@@ -247,6 +247,30 @@ nor font caching; everything else behaves the same.
 
 Regenerate `dist/index.html` after changing the app rather than editing it.
 
+`midsleep-site.zip` is `dist/` with the files at the archive root, which is the
+shape drag-and-drop hosts expect; `midsleep-pwa.zip` keeps them inside a
+`midsleep/` folder. Both are build outputs and are gitignored.
+
+## Putting it on a web address
+
+Any static host works, and the bundle carries no absolute paths, so root or a
+sub-directory both serve correctly — verified at `/` and at `/app/`: manifest
+parses clean, the service worker claims its own scope, and the app reloads with
+the network cut from either.
+
+The host must serve it over https. That is not a preference: a service worker,
+an install, and `getUserMedia` for the overnight recording all require a secure
+context.
+
+On an iPhone that address is the *only* route to a home screen app. iOS has no
+install prompt and will not run a downloaded file as an app, so the app detects
+iOS and prints the Safari steps (Share → Add to Home Screen) with the current
+address, rather than offering a button that platform never fires.
+
+`.github/workflows/pages.yml` deploys `dist/` to GitHub Pages, but Pages has to
+be switched on once by a repository admin (Settings → Pages → Source: GitHub
+Actions) and, once on, only deploys from the branch its environment allows.
+
 ## Offline copy
 
 The **Download** tab hands over the whole app as one HTML file. It is the same
