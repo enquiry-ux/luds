@@ -501,10 +501,10 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Sections">
     <button role="tab" id="tab-btn-today"  aria-controls="tab-today"  aria-selected="true"  data-tab="today">Today</button>
-    <button role="tab" id="tab-btn-sleep"  aria-controls="tab-sleep"  aria-selected="false" data-tab="sleep">Sleep</button>
     <button role="tab" id="tab-btn-clock"  aria-controls="tab-clock"  aria-selected="false" data-tab="clock">Body clock</button>
     <button role="tab" id="tab-btn-habits" aria-controls="tab-habits" aria-selected="false" data-tab="habits">Habits</button>
     <button role="tab" id="tab-btn-goals"  aria-controls="tab-goals"  aria-selected="false" data-tab="goals">Goals</button>
+    <button role="tab" id="tab-btn-sleep"  aria-controls="tab-sleep"  aria-selected="false" data-tab="sleep">Sleep</button>
     <button role="tab" id="tab-btn-brief"  aria-controls="tab-brief"  aria-selected="false" data-tab="brief">Briefing</button>
     <button role="tab" id="tab-btn-app"    aria-controls="tab-app"    aria-selected="false" data-tab="app">Download</button>
   </nav>
@@ -2770,7 +2770,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   var setupOpen = false;
   var welcomeMode = "form";   // "choose" when there are people to pick between
   var editingId = null;       // profile being edited, null when creating
-  var TABS = ["today", "sleep", "clock", "habits", "goals", "brief", "app"];
+  var TABS = ["today", "clock", "habits", "goals", "sleep", "brief", "app"];
   var activeTab = "today";
   try { var saved = localStorage.getItem("midsleep.tab"); if (TABS.indexOf(saved) >= 0) activeTab = saved; } catch (e) {}
 
