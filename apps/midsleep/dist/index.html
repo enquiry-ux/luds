@@ -421,6 +421,9 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 .rec-privacy{font-size:12.5px;color:var(--ink-2);line-height:1.5;padding:11px 13px;border-radius:8px;
   background:var(--inset);border:1px solid var(--ring);border-left:3px solid var(--good)}
 .rec-privacy b{color:var(--ink)}
+.rec-blocked{font-size:12.5px;color:var(--ink-2);line-height:1.5;padding:11px 13px;border-radius:8px;
+  background:var(--inset);border:1px solid var(--ring);border-left:3px solid var(--wake)}
+.rec-blocked b{color:var(--ink)}
 .rec-start{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3)}
 .rec-live{display:grid;grid-template-columns:auto 1fr;gap:var(--s4);align-items:center;
   padding:var(--s4);border-radius:10px;background:var(--inset);border:1px solid var(--ring)}
@@ -620,6 +623,8 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     </div>
     <div class="rec-body">
       <p class="rec-privacy" id="rec-privacy"><b>No audio is kept.</b> The microphone is measured, never recorded: every 30 seconds becomes a single loudness number and the sound itself is thrown away in the same instant. Nothing is saved, nothing is sent anywhere, and there is nothing that could be played back.</p>
+
+      <p class="rec-blocked" id="rec-blocked" hidden></p>
 
       <div class="rec-start" id="rec-idle">
         <button type="button" class="btn" id="rec-go">Start recording</button>
@@ -3070,6 +3075,20 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     copy.hidden = false;
   }
 
+  // The microphone is refused to any page embedded in another site, so inside the
+  // viewer this card can only ever fail. Say so where it is read, rather than
+  // leaving a button whose one outcome is a red error.
+  function renderRecorder(){
+    var blocked = isFramed() || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    var note = $("rec-blocked");
+    note.hidden = !blocked;
+    $("rec-go").disabled = blocked;
+    if (!blocked) return;
+    note.innerHTML = isFramed()
+      ? "<b>Recording cannot run here.</b> This page is open inside Claude, and a browser refuses the microphone to any page embedded in another site \u2014 nothing in the app itself can change that. The same app opened at its own address, or from a home screen, gets the microphone. Everything else on this page works as it is."
+      : "<b>This browser will not give the page a microphone.</b> Everything else works \u2014 log your nights by hand below.";
+  }
+
   function renderDownload(){
     renderInstall();
     $("dl-file-note").textContent = isIOS
@@ -3866,6 +3885,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 
   /* ---------------- boot ---------------- */
   buildFormHabits();
+  renderRecorder();
   probeSample();
   offerResume();
   setTab(activeTab, true);

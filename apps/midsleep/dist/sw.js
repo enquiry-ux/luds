@@ -1,7 +1,7 @@
 /* Midsleep service worker: app shell cached on install, so the installed app
    opens with no network at all. Fonts are cached opportunistically the first
    time they load, which is what keeps the real typefaces offline. */
-var CACHE = "midsleep-e6043d2c";
+var CACHE = "midsleep-1a5ef59a";
 var SHELL = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"
