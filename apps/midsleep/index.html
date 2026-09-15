@@ -450,6 +450,21 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 .br-none{font-size:13.5px;color:var(--muted);max-width:62ch}
 </style>
 
+<div class="welcome" id="screen-lock" hidden>
+  <div class="welcome-inner">
+    <div class="welcome-brand">
+      <div class="eyebrow">Locked to this device</div>
+      <h1>Midsleep</h1>
+      <p class="welcome-lede" id="lock-lede"></p>
+    </div>
+    <div class="welcome-form">
+      <button type="button" class="btn" id="lock-go">Unlock</button>
+      <p class="form-msg" id="lock-msg"></p>
+      <button type="button" class="link-plain" id="lock-reset">Can\u2019t unlock this device?</button>
+    </div>
+  </div>
+</div>
+
 <div class="welcome" id="screen-welcome">
   <div class="welcome-inner">
     <div class="welcome-brand">
@@ -867,6 +882,26 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   </div>
 
   <div class="panel" id="tab-app" role="tabpanel" aria-labelledby="tab-btn-app" hidden>
+  <section class="card" aria-labelledby="lk-h">
+    <div class="card-head">
+      <h2 id="lk-h">Lock it to you</h2>
+      <p class="sub">Your diary never leaves this device — there is no account and no server holding it. This adds the one thing that is missing: a face or fingerprint check before it opens, so an unlocked phone in someone else’s hand is not an open diary.</p>
+    </div>
+    <div class="dl-body">
+      <div class="dl-row" id="lk-row">
+        <div class="dl-text">
+          <h3 id="lk-state">Face ID or fingerprint</h3>
+          <div id="lk-body"></div>
+        </div>
+        <div class="dl-actions">
+          <button type="button" class="btn" id="lk-on" hidden>Turn it on</button>
+          <button type="button" class="btn ghost" id="lk-off" hidden>Turn it off</button>
+          <button type="button" class="btn ghost" id="lk-now" hidden>Lock now</button>
+        </div>
+      </div>
+      <p class="form-msg" id="lk-msg"></p>
+    </div>
+  </section>
   <section class="card" aria-labelledby="app-h">
     <div class="card-head">
       <h2 id="app-h">Take it offline</h2>
@@ -1064,8 +1099,122 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     pid: null,       // whose data is on screen
     profile: null,   // the active profile, resolved from the two above
     goals: [],
-    demo: false      // looking around with the example fortnight, before signing up
+    demo: false,     // looking around with the example fortnight, before signing up
+    locked: false    // the device check is on and has not been passed this launch
   };
+
+  /* ---------------- device lock ----------------
+     "Private to me" without a password to type: the phone's own face or
+     fingerprint check, through WebAuthn. Registering asks the platform for a
+     passkey that never leaves the device, and every launch asks it again before
+     anything is rendered.
+
+     Where the platform offers the PRF extension the passkey also yields a secret,
+     and the diary is encrypted with a key derived from it: the stored blob is
+     then unreadable without that face or finger, full stop. Where it does not,
+     the check still gates the screen and the data keeps whatever protection the
+     device gives it. The app says which of the two is in force rather than
+     implying the stronger one.
+
+     It needs a real origin at the top level, so it is offered in the installed
+     and hosted copies and not inside the artifact viewer's iframe.          */
+  var SUB = (window.crypto && window.crypto.subtle) ? window.crypto.subtle : null;
+  var LOCKKEY = "midsleep.lock";
+  var lockCfg = null;          // { credId, salt, prf, on } once enrolled
+  var lockKey = null;          // CryptoKey for the vault, only when PRF is in play
+
+  function lockAvailable(){
+    return !!(SUB && window.PublicKeyCredential && navigator.credentials &&
+              typeof navigator.credentials.create === "function" &&
+              isHosted() && !isFramed());
+  }
+  function randomBytes(n){ var b = new Uint8Array(n); window.crypto.getRandomValues(b); return b; }
+  function b64(buf){
+    var b = new Uint8Array(buf), out = "";
+    for (var i = 0; i < b.length; i++) out += String.fromCharCode(b[i]);
+    return window.btoa(out);
+  }
+  function unb64(str){
+    var raw = window.atob(str), out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  function loadLockCfg(){
+    try {
+      var raw = window.localStorage.getItem(LOCKKEY);
+      lockCfg = raw ? JSON.parse(raw) : null;
+    } catch (e) { lockCfg = null; }
+    if (lockCfg && !(lockCfg.credId && lockCfg.salt)) lockCfg = null;
+    return lockCfg;
+  }
+  function saveLockCfg(){
+    try {
+      if (lockCfg) window.localStorage.setItem(LOCKKEY, JSON.stringify(lockCfg));
+      else window.localStorage.removeItem(LOCKKEY);
+    } catch (e) {}
+  }
+
+  // The PRF secret is a fixed 32 bytes for this credential; HKDF turns it into
+  // the AES key, so the raw secret is never itself the key.
+  function keyFromPrf(secret){
+    return SUB.importKey("raw", secret, "HKDF", false, ["deriveKey"]).then(function(base){
+      return SUB.deriveKey(
+        { name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0),
+          info: new TextEncoder().encode("midsleep-vault-v1") },
+        base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    });
+  }
+  function seal(key, obj){
+    var iv = randomBytes(12);
+    return SUB.encrypt({ name: "AES-GCM", iv: iv }, key, new TextEncoder().encode(JSON.stringify(obj)))
+      .then(function(ct){ return { v: 1, iv: b64(iv), ct: b64(ct) }; });
+  }
+  function unseal(key, blob){
+    return SUB.decrypt({ name: "AES-GCM", iv: unb64(blob.iv) }, key, unb64(blob.ct))
+      .then(function(pt){ return JSON.parse(new TextDecoder().decode(pt)); });
+  }
+
+  function enrolLock(){
+    var salt = randomBytes(32);
+    var userId = randomBytes(16);
+    return navigator.credentials.create({ publicKey: {
+      challenge: randomBytes(32),
+      rp: { name: "Midsleep", id: location.hostname },
+      user: { id: userId, name: "Midsleep on this device", displayName: "Midsleep" },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform",
+                                userVerification: "required", residentKey: "preferred" },
+      timeout: 60000,
+      extensions: { prf: {} }
+    }}).then(function(cred){
+      if (!cred) throw new Error("no credential");
+      var ext = cred.getClientExtensionResults ? cred.getClientExtensionResults() : {};
+      lockCfg = { credId: b64(cred.rawId), salt: b64(salt),
+                  prf: !!(ext && ext.prf && ext.prf.enabled), on: true };
+      saveLockCfg();
+      return lockCfg;
+    });
+  }
+
+  // Returns the vault key when the platform gave us one, null when the check
+  // passed but offers no secret. Rejects when the check itself failed.
+  function verifyLock(){
+    if (!lockCfg) return Promise.reject(new Error("not enrolled"));
+    var salt = unb64(lockCfg.salt);
+    return navigator.credentials.get({ publicKey: {
+      challenge: randomBytes(32),
+      allowCredentials: [{ type: "public-key", id: unb64(lockCfg.credId) }],
+      userVerification: "required",
+      timeout: 60000,
+      extensions: { prf: { eval: { first: salt } } }
+    }}).then(function(assertion){
+      if (!assertion) throw new Error("no assertion");
+      var ext = assertion.getClientExtensionResults ? assertion.getClientExtensionResults() : {};
+      var first = ext && ext.prf && ext.prf.results && ext.prf.results.first;
+      if (!first) return null;
+      return keyFromPrf(new Uint8Array(first));
+    });
+  }
 
   /* ---------------- local storage ----------------
      The artifact database only exists inside the claude.ai viewer. A saved copy
@@ -1077,19 +1226,59 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     try { window.localStorage.setItem(LKEY + ".probe", "1"); window.localStorage.removeItem(LKEY + ".probe"); return true; }
     catch (e) { return false; }
   })();
-  function localLoad(){
-    try {
-      var raw = window.localStorage.getItem(LKEY);
-      if (raw) localData = JSON.parse(raw);
-    } catch (e) {}
-    if (!localData || typeof localData !== "object") localData = {};
+  function normaliseLocal(obj){
+    localData = (obj && typeof obj === "object") ? obj : {};
     if (!Array.isArray(localData.profiles)) localData.profiles = [];
     if (!localData.byPid || typeof localData.byPid !== "object") localData.byPid = {};
   }
+  function storedBlob(){
+    try {
+      var raw = window.localStorage.getItem(LKEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  // true when the diary is on disk but sealed: the caller has to unlock before
+  // there is anything to show.
+  function vaultSealed(){
+    var b = storedBlob();
+    return !!(b && b.enc && !lockKey);
+  }
+  function localLoad(){
+    var b = storedBlob();
+    if (b && b.enc) { normaliseLocal(null); return false; }   // sealed, needs the key
+    normaliseLocal(b);
+    return true;
+  }
+  function openVault(key){
+    var b = storedBlob();
+    if (!b || !b.enc) { lockKey = key; normaliseLocal(b); return Promise.resolve(true); }
+    return unseal(key, b.enc).then(function(obj){
+      lockKey = key;
+      normaliseLocal(obj);
+      return true;
+    });
+  }
+  // Sealing is async, so writes coalesce: a write asked for while one is in
+  // flight replaces it rather than queueing behind it, and the last state wins.
+  var sealing = false, sealAgain = false;
   function localWrite(){
     if (!localOk) return;
-    try { window.localStorage.setItem(LKEY, JSON.stringify(localData)); }
-    catch (e) { localOk = false; render(); }
+    if (!lockKey) {
+      try { window.localStorage.setItem(LKEY, JSON.stringify(localData)); }
+      catch (e) { localOk = false; render(); }
+      return;
+    }
+    if (sealing) { sealAgain = true; return; }
+    sealing = true;
+    seal(lockKey, localData).then(function(blob){
+      try { window.localStorage.setItem(LKEY, JSON.stringify({ v: 2, enc: blob })); }
+      catch (e) { localOk = false; render(); }
+    }).catch(function(){
+      localOk = false; render();
+    }).then(function(){
+      sealing = false;
+      if (sealAgain) { sealAgain = false; localWrite(); }
+    });
   }
   function localBucket(pid){
     if (!localData.byPid[pid]) localData.byPid[pid] = { nights: [], goals: [], prefs: {} };
@@ -3054,6 +3243,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 
   function renderDownload(){
     renderInstall();
+    renderLockSettings();
     $("dl-file-note").textContent = isIOS
       ? "On an iPhone the file lands in Files \u2014 useful as a backup, but iOS will not run it as an app; use the Home Screen route above."
       : "";
@@ -3076,6 +3266,13 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   try { var saved = localStorage.getItem("midsleep.tab"); if (TABS.indexOf(saved) >= 0) activeTab = saved; } catch (e) {}
 
   function renderScreens(){
+    if (state.locked) {
+      $("screen-lock").hidden = false;
+      $("screen-welcome").hidden = true;
+      $("screen-app").hidden = true;
+      return;
+    }
+    $("screen-lock").hidden = true;
     var show = (!state.profile && !state.demo) || setupOpen;
     $("screen-welcome").hidden = !show;
     $("screen-app").hidden = show;
@@ -3410,6 +3607,129 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     subscribeActive();
   }
 
+  /* ---------------- the device check, on screen ---------------- */
+  function lockMsg(text, isErr){
+    var m = $("lock-msg");
+    m.textContent = text || "";
+    m.className = "form-msg" + (isErr ? " err" : "");
+  }
+  function renderLock(){
+    var sealed = vaultSealed();
+    $("lock-lede").innerHTML = sealed
+      ? "Your nights are encrypted with a key held by this device\u2019s passkey. Unlock with the same face or fingerprint you use for the phone itself."
+      : "Unlock with the same face or fingerprint you use for the phone itself.";
+    $("lock-go").hidden = !lockAvailable();
+    if (!lockAvailable()) {
+      lockMsg(sealed
+        ? "This copy cannot run the check, so the diary stays sealed here. Open the app where you turned the lock on."
+        : "This copy cannot run the check. Open the app where you turned the lock on.", true);
+    } else lockMsg("");
+  }
+  function unlockNow(){
+    if (!lockAvailable()) return;
+    lockMsg("Waiting for the device\u2026");
+    verifyLock().then(function(key){
+      return key ? openVault(key) : Promise.resolve(localLoad());
+    }).then(function(){
+      lockMsg("");
+      openLocal();
+    }).catch(function(e){
+      var name = e && e.name;
+      lockMsg(name === "NotAllowedError"
+        ? "That was cancelled or did not match. Try again."
+        : "Could not unlock" + (e && e.message ? ": " + e.message : "."), true);
+    });
+  }
+
+  function lkMsg(text, isErr){
+    var m = $("lk-msg");
+    m.textContent = text || "";
+    m.className = "form-msg" + (isErr ? " err" : "");
+    if (text && !isErr) window.setTimeout(function(){ if (m.textContent === text) m.textContent = ""; }, 6000);
+  }
+  function renderLockSettings(){
+    var on = !!(lockCfg && lockCfg.on);
+    var body = $("lk-body"), head = $("lk-state");
+    $("lk-on").hidden = on || !lockAvailable();
+    $("lk-off").hidden = !on;
+    $("lk-now").hidden = !on;
+    if (!lockAvailable() && !on) {
+      head.textContent = "Not available here";
+      body.innerHTML = isFramed()
+        ? "<p>A page embedded inside Claude cannot ask the device for a face or fingerprint check. Install the app from a web address and the option appears there.</p>"
+        : "<p>This browser does not offer a passkey check on this device. Opened as a plain file it cannot either \u2014 serve the app from an address and it can.</p>";
+      return;
+    }
+    if (!on) {
+      head.textContent = "Off";
+      body.innerHTML =
+        "<p>Anyone holding this phone unlocked can open Midsleep and read every night in it. Turning this on means the app asks for your face or fingerprint first, every time it opens \u2014 no password to type and nothing to remember.</p>" +
+        "<p><b>If this device offers it, the diary is also encrypted</b> with a key only that passkey can produce, so the stored data is unreadable without it. The app will tell you which of the two you got.</p>";
+      return;
+    }
+    head.textContent = lockCfg.prf ? "On \u2014 and the diary is encrypted" : "On";
+    body.innerHTML = lockCfg.prf
+      ? "<p>Midsleep asks for your face or fingerprint when it opens, and what is stored on this device is encrypted with a key that only that passkey can produce. Nothing can read it without you \u2014 not another app, not someone with the phone in their hand, not me.</p>" +
+        "<p><b>There is no recovery.</b> Delete the passkey, reset the phone, or turn the lock off from somewhere else, and these nights are gone for good. Export a copy from below if that matters to you.</p>"
+      : "<p>Midsleep asks for your face or fingerprint when it opens. This device did not offer the extra secret, so the diary itself is stored as the device keeps it rather than encrypted \u2014 the check guards the screen, and the phone\u2019s own encryption guards the file.</p>";
+  }
+  function turnLockOn(){
+    if (!lockAvailable()) return;
+    lkMsg("Ask the device\u2026");
+    enrolLock().then(function(cfg){
+      if (!cfg.prf) { renderLockSettings(); lkMsg("On. This device guards the screen but offered no key, so the diary is not encrypted."); return; }
+      // Re-write what is already stored, now sealed.
+      return verifyLock().then(function(key){
+        if (!key) throw new Error("no key");
+        lockKey = key;
+        localWrite();
+        renderLockSettings();
+        lkMsg("On, and everything stored here is now encrypted.");
+      });
+    }).catch(function(e){
+      lockCfg = null; saveLockCfg();
+      renderLockSettings();
+      var name = e && e.name;
+      lkMsg(name === "NotAllowedError"
+        ? "That was cancelled, so nothing changed."
+        : "Could not set it up" + (e && e.message ? ": " + e.message : "."), true);
+    });
+  }
+  function turnLockOff(){
+    if (!lockCfg) return;
+    if (!window.confirm("Turn the lock off? Midsleep will open without asking for your face or fingerprint, and anything encrypted here will be written back in the clear.")) return;
+    var wasKey = lockKey;
+    lockKey = null;
+    lockCfg = null;
+    saveLockCfg();
+    if (wasKey) localWrite();            // back to plain, from what is in memory
+    renderLockSettings();
+    lkMsg("Off. The app opens straight away now.");
+  }
+  function lockNow(){
+    if (rec.on) { lkMsg("Stop the recording first \u2014 locking would end it.", true); return; }
+    lockKey = null;
+    state.locked = true;
+    state.nights = []; state.goals = []; state.briefings = {};
+    state.profiles = []; state.pid = null; state.profile = null;
+    normaliseLocal(null);
+    dropActive();
+    renderLock();
+    render();
+  }
+  // Wipe, for a device whose passkey is gone: the only honest answer when the
+  // data cannot be read and cannot be proved to be yours.
+  function resetLocked(){
+    if (!window.confirm("Erase the diary stored on this device and start over? If it is encrypted it cannot be recovered without the passkey, so this is the only way back in. Anything exported earlier is unaffected.")) return;
+    try { window.localStorage.removeItem(LKEY); } catch (e) {}
+    try { window.localStorage.removeItem(RKEY); } catch (e) {}
+    lockCfg = null; lockKey = null; saveLockCfg();
+    normaliseLocal(null);
+    state.locked = false;
+    welcomeMode = "form";
+    openLocal();
+  }
+
   function connect(){
     var p = (window.claude && typeof window.claude.use === "function") ? window.claude.use("db") : Promise.resolve(null);
     p.then(function(db){
@@ -3444,7 +3764,27 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   }
 
   function startLocal(){
-    localLoad();
+    loadLockCfg();
+    if (lockCfg && lockCfg.on && lockAvailable()) {
+      state.locked = true;
+      renderLock();
+      render();
+      return;
+    }
+    // Enrolled, but this copy cannot run the check (a different browser, or the
+    // viewer's iframe). Sealed data stays sealed; plain data still opens.
+    if (lockCfg && lockCfg.on && vaultSealed()) {
+      state.locked = true;
+      renderLock();
+      render();
+      return;
+    }
+    openLocal();
+  }
+
+  function openLocal(){
+    state.locked = false;
+    if (!lockKey) localLoad();          // an opened vault is already in memory
     state.profiles = localData.profiles.slice();
     var want = null;
     try { want = window.localStorage.getItem("midsleep.pid"); } catch (e) {}
@@ -3627,6 +3967,11 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   });
   window.addEventListener("beforeunload", function(){ if (rec.on) saveSession(); });
 
+  $("lock-go").addEventListener("click", unlockNow);
+  $("lock-reset").addEventListener("click", resetLocked);
+  $("lk-on").addEventListener("click", turnLockOn);
+  $("lk-off").addEventListener("click", turnLockOff);
+  $("lk-now").addEventListener("click", lockNow);
   $("dl-copy-link").addEventListener("click", function(){
     var url = location.href.split("#")[0];
     if (navigator.clipboard && navigator.clipboard.writeText) {
