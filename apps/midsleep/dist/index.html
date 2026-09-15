@@ -234,20 +234,29 @@ p{margin:0}
 .scale-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px}
 
 /* ---------- form ---------- */
-.form{padding:var(--s5);display:flex;flex-direction:column;gap:var(--s4)}
-.field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:var(--s3)}
+.form{padding:var(--s5);display:flex;flex-direction:column;gap:var(--s5)}
+.field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:var(--s4) var(--s3);align-items:end}
 .field{display:flex;flex-direction:column;gap:5px;min-width:0}
 .field label,.field .lbl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.field .hint{font-size:11.5px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none}
+.field .hint{font-size:11px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none;white-space:nowrap}
+.field label,.field .lbl{line-height:1.35}
 input[type="date"],input[type="time"],input[type="number"],input[type="text"]{font-family:var(--f-mono);font-size:14px;padding:8px 9px;border-radius:6px;border:1px solid var(--rule);background:var(--inset);color:var(--ink);width:100%;min-width:0}
 input[type="text"]{font-family:var(--f-ui)}
 input:focus-visible,button:focus-visible,.acto-row:focus-visible,.hab:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 .seg{display:flex;gap:3px;background:var(--inset);border:1px solid var(--rule);border-radius:6px;padding:3px}
 .seg button{flex:1;font-family:var(--f-mono);font-size:13px;padding:5px 0;border:0;border-radius:4px;background:transparent;color:var(--ink-2);cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--sleep);color:#fff}
-.switch{display:flex;align-items:center;gap:var(--s2);font-size:13.5px;color:var(--ink-2)}
-.switch input{width:16px;height:16px;accent-color:var(--sleep)}
-.form-habits{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--s2)}
+.switch{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--ink-2);line-height:1.4}
+.switch input{width:17px;height:17px;accent-color:var(--sleep);flex:none;margin-top:1px}
+.switch .switch-hint{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.switch-card{padding:11px 13px;border-radius:9px;background:var(--inset);border:1px solid var(--ring);cursor:pointer}
+.switch-card:hover{border-color:var(--rule)}
+.form-habits{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:var(--s2)}
+.form-habits .switch{padding:10px 12px;border-radius:8px;background:var(--inset);border:1px solid var(--ring);
+  align-items:center;cursor:pointer;color:var(--ink);
+  font-size:13.5px;font-weight:400;letter-spacing:0;text-transform:none}
+.form-habits .switch:hover{border-color:var(--rule)}
+.form-habits .switch:focus-within{border-color:var(--sleep)}
 .form-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3)}
 .btn{font-family:var(--f-ui);font-size:14px;font-weight:600;padding:9px 18px;border-radius:6px;border:1px solid transparent;cursor:pointer;background:var(--sleep);color:#fff}
 .btn.ghost{background:transparent;color:var(--ink-2);border-color:var(--rule)}
@@ -256,7 +265,7 @@ button:disabled{opacity:.45;cursor:not-allowed;filter:none}
 button:disabled:hover{filter:none}
 .form-msg{font-size:13px;color:var(--ink-2)}
 .form-msg.err{color:var(--crit)}
-.divider{height:1px;background:var(--rule);margin:var(--s1) 0}
+.divider{height:1px;background:var(--rule);margin:0}
 
 /* ---------- table ---------- */
 .table-scroll{overflow-x:auto;padding:0 var(--s4) var(--s4)}
@@ -333,11 +342,17 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;border-top:1px soli
 .welcome-foot{font-size:12.5px;color:var(--muted);text-align:center}
 
 /* ---------- tabs ---------- */
-.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--rule);position:sticky;top:0;z-index:20;background:var(--plane);margin-inline:-4px;padding-inline:4px}
-.tabs button{flex:none;font:inherit;font-size:14px;font-weight:600;color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;padding:11px 14px;cursor:pointer;white-space:nowrap}
-.tabs button:hover{color:var(--ink-2)}
+.tabs{display:flex;gap:2px;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid var(--rule);position:sticky;top:0;z-index:20;background:var(--plane);margin-inline:-4px;padding-inline:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;transition:box-shadow .18s ease,background-color .18s ease}
+.tabs::-webkit-scrollbar{display:none}
+/* once the bar is stuck, content passes behind it — say so with a soft edge */
+.tabs.is-stuck{box-shadow:0 10px 18px -14px rgba(0,0,0,.5),0 2px 6px -4px rgba(0,0,0,.28)}
+.tabs button{flex:none;font:inherit;font-size:14px;font-weight:600;color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;padding:11px 14px;cursor:pointer;white-space:nowrap;border-radius:7px 7px 0 0;transition:color .15s ease,background-color .15s ease}
+.tabs button:hover{color:var(--ink-2);background:var(--inset)}
+.tabs button:focus-visible{outline:2px solid var(--sleep);outline-offset:-3px}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--sleep)}
 .panel{display:flex;flex-direction:column;gap:var(--s5)}
+/* nothing lands under the sticky bar when a tab or anchor scrolls it into view */
+.panel>*,.panel .card-head,.panel h2,.panel h3{scroll-margin-top:60px}
 
 /* ---------- goals ---------- */
 .goals{display:flex;flex-direction:column;gap:var(--s3);padding:var(--s4) var(--s5) 0}
@@ -733,10 +748,11 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
           <input type="text" id="f-note" maxlength="120" placeholder="Late coffee, noisy street, travelled&hellip;">
         </div>
       </div>
-      <label class="switch" for="f-free">
+      <label class="switch switch-card" for="f-free">
         <input type="checkbox" id="f-free">
-        Free day &mdash; no alarm, woke naturally
-        <span class="hint" style="color:var(--muted)">(needed for chronotype and social jetlag)</span>
+        <span>Free day &mdash; no alarm, woke naturally
+          <span class="switch-hint">Needed for chronotype and social jetlag</span>
+        </span>
       </label>
       <div class="divider"></div>
       <div class="field">
@@ -2976,7 +2992,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       'Separate profiles keep different people\'s sleep data apart \u2014 they do not keep it private from one another. ' +
       'The page itself is already limited to people signed in to your organisation.';
   }
-  function setTab(id){
+  function setTab(id, quiet){
     if (TABS.indexOf(id) < 0) id = "today";
     activeTab = id;
     TABS.forEach(function(t){
@@ -2985,7 +3001,50 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       $("tab-btn-" + t).tabIndex = t === id ? 0 : -1;
     });
     try { localStorage.setItem("midsleep.tab", id); } catch (e) {}
+    syncStuck();
+    keepTabVisible();
+    if (!quiet) revealPanelTop();
   }
+
+  // on a narrow screen the bar scrolls sideways; never leave the chosen tab half off the edge
+  function keepTabVisible(){
+    var nav = $("tabs"), btn = $("tab-btn-" + activeTab);
+    if (!nav || !btn || !nav.clientWidth) return;
+    var nr = nav.getBoundingClientRect(), br = btn.getBoundingClientRect(), d = 0;
+    if (br.left < nr.left + 12) d = br.left - (nr.left + 12);
+    else if (br.right > nr.right - 12) d = br.right - (nr.right - 12);
+    if (d) nav.scrollLeft += d;
+  }
+
+  // switching tabs while scrolled down used to drop you into the middle of a card
+  // with its heading hidden behind the sticky bar; bring the panel's top back into view
+  function revealPanelTop(){
+    var nav = $("tabs"), panel = $("tab-" + activeTab);
+    if (!nav || !panel) return;
+    var top = window.pageYOffset + panel.getBoundingClientRect().top - nav.offsetHeight - 8;
+    top = Math.max(0, top);
+    if (window.pageYOffset > top + 1) {
+      var soft = !window.matchMedia || !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: top, behavior: soft ? "smooth" : "auto" });
+    }
+  }
+
+  // the bar only casts a shadow once it is actually pinned to the top
+  var syncStuck = function(){};
+  (function stickyTabs(){
+    var nav = $("tabs");
+    if (!nav) return;
+    var on = false;
+    syncStuck = function(){
+      var r = nav.getBoundingClientRect();
+      if (!r.height) return;                      // hidden behind the welcome screen
+      var next = r.top <= 0.5;
+      if (next !== on) { on = next; nav.classList.toggle("is-stuck", on); }
+    };
+    window.addEventListener("scroll", syncStuck, { passive: true });
+    window.addEventListener("resize", syncStuck, { passive: true });
+    syncStuck();
+  })();
 
   // live preview of the night being typed on the welcome screen
   function renderPreview(){
@@ -3660,7 +3719,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   buildFormHabits();
   probeSample();
   offerResume();
-  setTab(activeTab);
+  setTab(activeTab, true);
   setDefaultDate();
   syncFormToDate();
   render();
