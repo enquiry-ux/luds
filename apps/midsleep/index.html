@@ -389,6 +389,11 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 .dl-text h3{font-size:16px;margin-bottom:4px}
 .dl-text p{font-size:13.5px;color:var(--ink-2);max-width:62ch}
 .dl-actions{display:flex;gap:var(--s2);flex-wrap:wrap}
+.dl-text p+p{margin-top:6px}
+.dl-steps{margin:8px 0 0;padding-left:20px;font-size:13.5px;color:var(--ink-2);max-width:62ch}
+.dl-steps li{margin-bottom:4px}
+.dl-steps b{color:var(--ink);font-weight:600}
+.dl-where{font-family:var(--f-mono);font-size:12.5px;word-break:break-all;color:var(--ink)}
 .dl-note{font-size:12.5px;color:var(--ink-2);line-height:1.5;padding:11px 13px;border-radius:8px;
   background:var(--inset);border:1px solid var(--ring);border-left:3px solid var(--sleep)}
 .dl-note b{color:var(--ink)}
@@ -868,18 +873,21 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       <p class="sub">The whole app is one HTML file. Save it and it runs from your own machine with no account, no internet and nothing to install.</p>
     </div>
     <div class="dl-body">
-      <div class="dl-row" id="dl-install" hidden>
+      <div class="dl-row" id="dl-install">
         <div class="dl-text">
-          <h3>Install on this device</h3>
-          <p>Your browser can add Midsleep properly &mdash; its own icon, its own window, no address bar, and it opens with no connection at all.</p>
+          <h3 id="dl-install-h">Install on this device</h3>
+          <div id="dl-install-body"></div>
         </div>
-        <button type="button" class="btn" id="dl-install-btn">Install</button>
+        <div class="dl-actions">
+          <button type="button" class="btn" id="dl-install-btn" hidden>Install</button>
+          <button type="button" class="btn ghost" id="dl-copy-link" hidden>Copy the link</button>
+        </div>
       </div>
 
       <div class="dl-row">
         <div class="dl-text">
           <h3>The app, as a file</h3>
-          <p>Everything &mdash; the energy model, the actogram, the body clock, habits and goals &mdash; in a single file of about <span class="mono" id="dl-size">&mdash;</span>. Open it by double-clicking, or put it on a phone home screen from the browser's share menu. It keeps its own diary in whichever browser opens it.</p>
+          <p>Everything &mdash; the energy model, the actogram, the body clock, habits and goals &mdash; in a single file of about <span class="mono" id="dl-size">&mdash;</span>. Open it by double-clicking and it runs, offline, with the microphone available. It keeps its own diary in whichever browser opens it. <span id="dl-file-note"></span></p>
         </div>
         <button type="button" class="btn" id="dl-app">Download the app</button>
       </div>
@@ -2144,10 +2152,10 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
         audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
       });
     } catch (e) {
-      var framed = window.self !== window.top;
+      var framed = isFramed();
       var name = e && e.name;
       if (name === "NotFoundError" || name === "DevicesNotFoundError") recMsg("No microphone found on this device.", true);
-      else if (framed) recMsg("The microphone was refused. Pages embedded in another site often cannot ask \u2014 the downloaded or installed copy can. (" + (name || "blocked") + ")", true);
+      else if (framed) recMsg("The microphone is blocked because this page is embedded inside Claude. The Download tab explains how to open it on its own, where recording works. (" + (name || "blocked") + ")", true);
       else recMsg("Microphone access was refused. Allow it for this site and try again.", true);
       return;
     }
@@ -2900,24 +2908,109 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     return Promise.all(writes).then(function(){ return people.length; });
   }
 
+  // Where the page is running decides what "install" can even mean here.
+  var UA = navigator.userAgent || "";
+  var isIOS = /iPad|iPhone|iPod/.test(UA) ||
+              (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var isAndroid = /Android/.test(UA);
+  function isFramed(){ try { return window.self !== window.top; } catch (e) { return true; } }
+  function isInstalled(){
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+           navigator.standalone === true;
+  }
+  function isHosted(){ return location.protocol === "http:" || location.protocol === "https:"; }
+
   // Only fires where the page is genuinely installable: served over https at the
   // top level with a manifest and a service worker. It never fires inside the
-  // artifact viewer, so the row simply stays hidden there.
+  // artifact viewer, where the row explains the way out instead.
   var installPrompt = null;
   window.addEventListener("beforeinstallprompt", function(ev){
     ev.preventDefault();
     installPrompt = ev;
-    var row = $("dl-install");
-    if (row) row.hidden = false;
+    renderInstall();
   });
   window.addEventListener("appinstalled", function(){
     installPrompt = null;
-    var row = $("dl-install");
-    if (row) row.hidden = true;
+    renderInstall();
     dlMsg("Installed. You can open Midsleep from your home screen or app list.");
   });
 
+  // Says the true thing for wherever this copy happens to be running. The iPhone
+  // case matters most: a file in Files can never become a home screen app there,
+  // so only a web address opened in Safari will do.
+  function renderInstall(){
+    var h = $("dl-install-h"), body = $("dl-install-body");
+    var btn = $("dl-install-btn"), copy = $("dl-copy-link");
+    if (!h || !body) return;
+    btn.hidden = true; copy.hidden = true;
+
+    if (isInstalled()) {
+      h.textContent = "Already installed";
+      body.innerHTML = "<p>You are running the installed copy. It opens with no connection, " +
+        "keeps its own diary on this device, and can use the microphone to record your night.</p>";
+      return;
+    }
+
+    if (isFramed()) {
+      h.textContent = "This copy is running inside Claude";
+      body.innerHTML =
+        "<p>A page embedded in another site cannot install itself or reach the microphone \u2014 " +
+        "that is the browser\u2019s rule, not a setting anyone can change from in here.</p>" +
+        "<p><b>On an iPhone, a downloaded file cannot become a home screen app.</b> " +
+        "Only a page opened in Safari at its own web address can. Put the folder from the " +
+        "download below on any web host, open that address in Safari, then Share \u2192 " +
+        "<b>Add to Home Screen</b>.</p>" +
+        "<p>On a computer the downloaded file is enough on its own: open it and everything, " +
+        "recording included, works.</p>";
+      return;
+    }
+
+    if (!isHosted()) {
+      h.textContent = "Opened as a file";
+      body.innerHTML =
+        "<p>This copy is running straight from a file, so everything works offline already \u2014 " +
+        "but a browser will not install a file as an app. Serve the folder from a web address " +
+        "if you want it on a home screen.</p>";
+      return;
+    }
+
+    if (isIOS) {
+      h.textContent = "Add it to your Home Screen";
+      body.innerHTML =
+        "<p>In <b>Safari</b> (not inside another app), from this address:</p>" +
+        "<ol class=\"dl-steps\">" +
+        "<li>Tap <b>Share</b> \u2014 the square with the arrow.</li>" +
+        "<li>Scroll down and tap <b>Add to Home Screen</b>.</li>" +
+        "<li>Tap <b>Add</b>.</li></ol>" +
+        "<p>It then opens full screen with its own icon, runs with no connection, and can " +
+        "ask for the microphone so it can record your night.</p>" +
+        "<p class=\"dl-where\">" + escapeHtml(location.href.split("#")[0]) + "</p>";
+      copy.hidden = false;
+      return;
+    }
+
+    if (installPrompt) {
+      h.textContent = "Install on this device";
+      body.innerHTML = "<p>Your browser can add Midsleep properly \u2014 its own icon, its own " +
+        "window, no address bar, and it opens with no connection at all.</p>";
+      btn.hidden = false;
+      return;
+    }
+
+    h.textContent = "Install on this device";
+    body.innerHTML = isAndroid
+      ? "<p>Open your browser\u2019s menu and choose <b>Install app</b> or <b>Add to Home screen</b>. " +
+        "It then opens full screen with its own icon and works with no connection.</p>"
+      : "<p>Look for <b>Install</b> in the address bar or the browser menu. If it is not offered, " +
+        "the downloaded file below runs the same app with nothing to install.</p>";
+    copy.hidden = false;
+  }
+
   function renderDownload(){
+    renderInstall();
+    $("dl-file-note").textContent = isIOS
+      ? "On an iPhone the file lands in Files \u2014 useful as a backup, but iOS will not run it as an app; use the Home Screen route above."
+      : "";
     $("dl-size").textContent = Math.max(1, Math.round(SELF_SOURCE.length / 1024)) + " KB";
     $("dl-note").innerHTML = state.db
       ? '<b>Two separate diaries.</b> This page saves to your Claude account; a downloaded copy saves to whichever browser opens it. ' +
@@ -3488,13 +3581,23 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   });
   window.addEventListener("beforeunload", function(){ if (rec.on) saveSession(); });
 
+  $("dl-copy-link").addEventListener("click", function(){
+    var url = location.href.split("#")[0];
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url)
+        .then(function(){ dlMsg("Link copied. Open it in Safari to add it to your Home Screen."); })
+        .catch(function(){ dlMsg("Could not copy \u2014 the address is shown above.", true); });
+    } else {
+      dlMsg("Could not copy \u2014 the address is shown above.", true);
+    }
+  });
   $("dl-install-btn").addEventListener("click", function(){
     if (!installPrompt) { dlMsg("This browser is not offering an install right now.", true); return; }
     var ev = installPrompt;
     installPrompt = null;
     ev.prompt();
     ev.userChoice.then(function(res){
-      if (res && res.outcome === "accepted") $("dl-install").hidden = true;
+      if (res && res.outcome === "accepted") renderInstall();
       else { installPrompt = ev; dlMsg(""); }
     }).catch(function(){});
   });
