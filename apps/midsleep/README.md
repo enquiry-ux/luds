@@ -170,8 +170,9 @@ split is the point:
 efficiency, sleep onset, wake, the restlessness verdict, the strip chart of the
 night, and today's peak / dip / second wind / wind-down.
 
-**Interpreted** — Claude is handed those figures through the `sample` capability
-and asked what they mean. It is told explicitly not to invent, re-derive or
+**Interpreted** — the *Midsleep agent* (the app's name in the interface for the
+`sample` capability, which runs on the viewer's own Claude account) is handed
+those figures and asked what they mean. It is told explicitly not to invent, re-derive or
 estimate any number, because a language model asked for arithmetic will invent
 it. Every figure it quotes is one this page computed. It returns JSON
 (`headline`, `night`, `restless`, `day`, `actions[]`, `watch`) which is rendered
@@ -185,6 +186,10 @@ press, never on load or a timer.
 
 When `sample` is unavailable — outside the Claude viewer, or consent declined —
 the measured half still renders in full and the read says so.
+
+The interface calls it the Midsleep agent rather than Claude, but the card states
+plainly that it runs on Claude and spends the viewer's own usage: naming the
+feature is fine, hiding what it costs is not.
 
 ### Restlessness
 

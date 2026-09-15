@@ -831,7 +831,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   <section class="card" aria-labelledby="bra-h">
     <div class="card-head">
       <h2 id="bra-h">The read</h2>
-      <p class="sub">Claude reads the figures above and tells you what they mean. It is given the measurements and told not to invent any &mdash; every number it quotes is one this page computed.</p>
+      <p class="sub">The Midsleep agent reads the figures above and tells you what they mean. It is handed the measurements and told not to invent any &mdash; every number it quotes is one this page computed.</p>
     </div>
     <div class="br-body">
       <div class="br-actions-row">
@@ -839,6 +839,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
         <button type="button" class="btn ghost" id="br-stop" hidden>Stop</button>
         <span class="form-msg" id="br-msg"></span>
       </div>
+      <p class="br-stamp">The agent runs on Claude using your own account, so each read spends a little of your usage. One read is kept per morning and shown again free.</p>
       <div id="br-out" hidden></div>
     </div>
   </section>
@@ -2589,7 +2590,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     var facts = briefingFacts(s, hs);
     if (!facts) { brMsg("There is no night to read yet.", true); return; }
     if (!(window.claude && typeof window.claude.use === "function")) {
-      brMsg("Asking Claude is only available inside the Claude viewer. The measurements above are all here either way.", true);
+      brMsg("The Midsleep agent needs the Claude viewer to run, so the read is off in this copy. Everything measured above is here either way.", true);
       return;
     }
     var date = facts.morningOf;
@@ -2618,7 +2619,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       $("br-out").hidden = true;
       if (c === "cancelled") { brMsg(""); return; }
       if (c === "not_granted" || c === "not_declared" || c === "sampling_disabled" || c === "capability_disabled")
-        brMsg("Claude is not available to this page, so the read is off. Everything measured above still stands.", true);
+        brMsg("The Midsleep agent could not be reached, so the read is off. Everything measured above still stands.", true);
       else if (c === "rate_limited") brMsg("Too many requests just now \u2014 give it a minute and try again.", true);
       else if (c === "invalid_json" || c === "empty_completion") brMsg("That came back in a shape the page could not read. Try again.", true);
       else if (c === "prompt_too_large") brMsg("Too much data to send at once.", true);
