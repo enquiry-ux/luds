@@ -2109,6 +2109,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   var WAKE_MIN = 4;           // 2 min of movement = an awakening
   var QUIET_MIN = 10;         // 5 min of quiet ends one
   var RKEY = "midsleep.rec";
+  var GAP = -1;               // an epoch no audio ran for, distinct from a silent one
 
   function runsOf(flags, want){
     var out = [], i = 0;
@@ -2123,25 +2124,35 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   function analyseNight(levels){
     var n = levels.length;
     if (n < QUIET_FOR_SLEEP) return null;
-    var sorted = levels.slice().sort(function(a, b){ return a - b; });
-    var pct = function(x){ return sorted[Math.min(n - 1, Math.max(0, Math.round(x * (n - 1))))]; };
+    var missing = levels.map(function(v){ return v === GAP; });
+    var gaps = runsOf(missing, true);
+    var unmeasured = gaps.reduce(function(t, r){ return t + r.len; }, 0);
+    var longestGap = gaps.reduce(function(m, r){ return Math.max(m, r.len); }, 0);
+    var real = levels.filter(function(v){ return v !== GAP; });
+    if (real.length < QUIET_FOR_SLEEP) return null;
+    var sorted = real.slice().sort(function(a, b){ return a - b; });
+    var pct = function(x){ return sorted[Math.min(real.length - 1, Math.max(0, Math.round(x * (real.length - 1))))]; };
     var floorV = pct(0.10), hiV = pct(0.90);
     var thresh = Math.max(floorV + 25, floorV + 0.35 * (hiV - floorV));
-    var active = levels.map(function(v){ return v > thresh; });
+    // A gap is not movement, so it never invents an awakening; it is not counted
+    // as quiet evidence either, which is what the unmeasured totals above are for.
+    var active = levels.map(function(v){ return v !== GAP && v > thresh; });
     var quietRuns = runsOf(active, false);
 
     var onset = null;
     for (var i = 0; i < quietRuns.length; i++) {
       if (quietRuns[i].len >= QUIET_FOR_SLEEP) { onset = quietRuns[i].from; break; }
     }
-    if (onset == null) return { thresh: thresh, onset: null, wake: null, awakenings: [], active: active, n: n };
+    if (onset == null) return { thresh: thresh, onset: null, wake: null, awakenings: [], active: active, n: n,
+                                gaps: gaps, unmeasured: unmeasured, longestGap: longestGap };
 
     var tail = quietRuns.filter(function(r){ return r.len >= QUIET_MIN && r.from >= onset; });
     var wake = tail.length ? tail[tail.length - 1].to : n;
     var awakenings = runsOf(active, true).filter(function(r){
       return r.len >= WAKE_MIN && r.from > onset && r.to < wake;
     });
-    return { thresh: thresh, onset: onset, wake: wake, awakenings: awakenings, active: active, n: n };
+    return { thresh: thresh, onset: onset, wake: wake, awakenings: awakenings, active: active, n: n,
+             gaps: gaps, unmeasured: unmeasured, longestGap: longestGap };
   }
 
   var rec = { on: false, startMs: 0, levels: [], epochStart: 0, peak: 0, live: 0,
@@ -2202,10 +2213,18 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       if (rms > rec.peak) rec.peak = rms;
       rec.live = rms;
       var now = Date.now();
-      while (now - rec.epochStart >= EPOCH_MS) {
+      if (now - rec.epochStart >= EPOCH_MS) {
+        // The epoch that was genuinely being sampled when the boundary passed.
         rec.levels.push(Math.min(1000, Math.round(rec.peak * 1000)));
         rec.peak = 0;
         rec.epochStart += EPOCH_MS;
+        // Anything further behind is time no audio ran for: a phone that locked,
+        // an app sent to the background, a tab frozen. Silence and "not measured"
+        // are not the same claim, so those epochs are marked, never scored as quiet.
+        while (now - rec.epochStart >= EPOCH_MS) {
+          rec.levels.push(GAP);
+          rec.epochStart += EPOCH_MS;
+        }
         if (++rec.flush >= 4) { rec.flush = 0; saveSession(); }   // survive a crash
       }
     };
@@ -2261,6 +2280,24 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       return;
     }
     renderStrip(a, levels, startMs);
+
+    var gapMin = Math.round((a.unmeasured || 0) * EPOCH_SEC / 60);
+    var worstMin = Math.round((a.longestGap || 0) * EPOCH_SEC / 60);
+    var worst = null;
+    (a.gaps || []).forEach(function(r){ if (r.len === a.longestGap) { worst = worst || r; } });
+    if (worst && (worstMin >= 20 || a.unmeasured > 0.1 * a.n)) {
+      $("rec-cells").innerHTML = "";
+      $("rec-verdict").innerHTML =
+        "<b>Nothing was heard for " + durWords(worstMin) + "</b>, from " +
+        clockOf(startMs + worst.from * EPOCH_MS) + " to " + clockOf(startMs + worst.to * EPOCH_MS) +
+        (gapMin > worstMin ? ", plus " + durWords(gapMin - worstMin) + " in shorter breaks" : "") +
+        ". That is what a locked screen or a backgrounded app looks like: the microphone stops, and " +
+        "calling that silence would be a guess rather than a measurement. Nothing was saved. Fill the " +
+        "form in below if you know roughly how the night went, and next time leave the app in front " +
+        "with the screen kept awake and the phone on charge.";
+      return;
+    }
+
     if (a.onset == null) {
       $("rec-cells").innerHTML = "";
       $("rec-verdict").textContent = "No settled stretch of ten minutes or more turned up, so this was not scored as sleep and nothing was saved. " +
@@ -2293,7 +2330,8 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     });
     $("rec-verdict").innerHTML = saved
       ? "<b>Saved to " + date + ".</b> " + a.awakenings.length + " awakening" + (a.awakenings.length === 1 ? "" : "s") +
-        " scored. These are estimates from sound, not a sleep lab \u2014 a restless partner or a passing lorry can read as movement, " +
+        " scored." + (gapMin > 0 ? " " + durWords(gapMin) + " of it went unmeasured and was left out of the scoring." : "") +
+        " These are estimates from sound, not a sleep lab \u2014 a restless partner or a passing lorry can read as movement, " +
         "so correct anything that looks wrong in the form below."
       : "Scored, but not saved.";
     $("f-date").value = date;
@@ -2314,6 +2352,10 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
           "fill-opacity": asleep ? 1 : 0.32
         }));
       });
+    });
+    (a.gaps || []).forEach(function(r){
+      svg.appendChild(el("rect", { x: x(r.from).toFixed(2), y: 0,
+        width: Math.max(0.6, x(r.to) - x(r.from)).toFixed(2), height: H, fill: "var(--grid)" }));
     });
     [a.onset, a.wake].forEach(function(i){
       if (i == null) return;
@@ -2727,6 +2769,10 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
           x: x(rr.from).toFixed(2), y: 0, width: Math.max(0.6, x(rr.to) - x(rr.from)).toFixed(2), height: H,
           fill: kind ? "var(--wake)" : "var(--sleep)", "fill-opacity": asleep ? 1 : 0.32 }));
       });
+    });
+    (a.gaps || []).forEach(function(rr){
+      svg.appendChild(el("rect", { x: x(rr.from).toFixed(2), y: 0,
+        width: Math.max(0.6, x(rr.to) - x(rr.from)).toFixed(2), height: H, fill: "var(--grid)" }));
     });
     [a.onset, a.wake].forEach(function(i){
       if (i == null) return;

@@ -184,6 +184,21 @@ two, and the card always says which one is on screen. The agent button is hidden
 entirely where the capability is absent, so a standalone copy shows no dead
 control.
 
+### Time the page did not hear
+
+Epochs are driven by the wall clock, so a suspended page (a locked phone, an app
+in the background, a frozen tab) does not shift the timeline — but it does leave
+epochs no audio ever ran for. Those are stored as `-1` rather than as silence,
+because silence there would be a guess. They are excluded from the loudness
+percentiles, can never become an awakening, and are drawn on the strip in grey.
+
+A night with a gap of 20 minutes or more, or with more than a tenth of it
+unmeasured, is not scored or saved at all: the verdict names the clock times of
+the longest gap and asks for the night by hand. Smaller gaps are saved with the
+unmeasured total stated. Verified against three synthetic nights — clean, a
+four-hour lock, and a five-minute hiccup — with the clean night scoring exactly
+as it did before the rule existed.
+
 ### Restlessness
 
 Scored from the epoch series, and deliberately separate from duration: a night
@@ -245,7 +260,12 @@ first time they load, so an installed copy keeps its real typefaces offline.
 A `file://` copy cannot register a service worker, so it gets neither install
 nor font caching; everything else behaves the same.
 
-Regenerate `dist/index.html` after changing the app rather than editing it.
+`build.py` regenerates every distributable copy from `index.html`: the two
+wrapped HTML builds and both zips. It also stamps the service worker's cache
+name with a hash of the shell, which is not cosmetic — the worker serves
+same-origin requests cache-first, so a deploy that reused the old cache name
+would keep serving the old app forever. Run it after changing the app rather
+than editing the built files.
 
 `midsleep-site.zip` is `dist/` with the files at the archive root, which is the
 shape drag-and-drop hosts expect; `midsleep-pwa.zip` keeps them inside a
