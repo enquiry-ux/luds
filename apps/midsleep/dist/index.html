@@ -425,6 +425,27 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 .rec-warn{font-size:12.5px;color:var(--ink-2);padding:10px 12px;border-radius:8px;background:var(--inset);
   border:1px solid var(--ring);border-left:3px solid var(--warn)}
 .btn.danger{background:var(--crit)}
+/* ---------- morning briefing ---------- */
+.br-body{padding:var(--s4) var(--s5) var(--s5);display:flex;flex-direction:column;gap:var(--s4)}
+.br-measured{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:var(--s3)}
+.br-actions-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3)}
+.br-head{font-family:var(--f-display);font-size:23px;font-weight:600;line-height:1.3;letter-spacing:-.015em;text-wrap:balance}
+.br-para{font-size:14.5px;color:var(--ink-2);line-height:1.6;max-width:66ch}
+.br-block{display:flex;flex-direction:column;gap:6px;padding-top:var(--s4);border-top:1px solid var(--rule)}
+.br-block:first-child{padding-top:0;border-top:0}
+.br-k{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.br-do{display:grid;grid-template-columns:auto 1fr;gap:var(--s3);align-items:start;padding:11px 13px;
+  border-radius:8px;background:var(--inset);border:1px solid var(--ring);border-left:3px solid var(--sleep)}
+.br-when{font-family:var(--f-mono);font-size:12.5px;color:var(--sleep);white-space:nowrap;font-weight:500}
+.br-what{font-size:14px;font-weight:500}
+.br-why{font-size:12.5px;color:var(--ink-2);margin-top:3px}
+.br-watch{font-size:13.5px;color:var(--ink-2);padding:11px 13px;border-radius:8px;background:var(--inset);
+  border:1px solid var(--ring);border-left:3px solid var(--wake)}
+.br-watch b{color:var(--ink)}
+.br-stamp{font-size:12px;color:var(--muted)}
+.br-thinking{display:flex;align-items:center;gap:var(--s2);font-size:13.5px;color:var(--ink-2)}
+.br-thinking i{width:9px;height:9px;border-radius:50%;background:var(--sleep);animation:recpulse 1.4s ease-in-out infinite}
+.br-none{font-size:13.5px;color:var(--muted);max-width:62ch}
 </style>
 
 <div class="welcome" id="screen-welcome">
@@ -502,6 +523,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     <button role="tab" id="tab-btn-clock"  aria-controls="tab-clock"  aria-selected="false" data-tab="clock">Body clock</button>
     <button role="tab" id="tab-btn-habits" aria-controls="tab-habits" aria-selected="false" data-tab="habits">Habits</button>
     <button role="tab" id="tab-btn-goals"  aria-controls="tab-goals"  aria-selected="false" data-tab="goals">Goals</button>
+    <button role="tab" id="tab-btn-brief"  aria-controls="tab-brief"  aria-selected="false" data-tab="brief">Briefing</button>
     <button role="tab" id="tab-btn-app"    aria-controls="tab-app"    aria-selected="false" data-tab="app">Download</button>
   </nav>
 
@@ -798,6 +820,48 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   </section>
   </div>
 
+  <div class="panel" id="tab-brief" role="tabpanel" aria-labelledby="tab-btn-brief" hidden>
+  <!-- ============ BRIEFING ============ -->
+  <section class="card" aria-labelledby="br-h">
+    <div class="card-head">
+      <h2 id="br-h">This morning</h2>
+      <p class="sub" id="br-when">&mdash;</p>
+    </div>
+    <div class="br-body">
+      <div class="br-measured" id="br-measured"></div>
+      <div id="br-strip-wrap" hidden>
+        <svg class="rec-strip" id="br-strip" preserveAspectRatio="none" viewBox="0 0 1000 56" role="img" aria-labelledby="br-strip-alt">
+          <title id="br-strip-alt">Last night as measured</title>
+        </svg>
+        <div class="rec-axis" id="br-strip-axis"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="brd-h">
+    <div class="card-head">
+      <h2 id="brd-h">Your day ahead</h2>
+      <p class="sub">Read from your own body clock, with today's ceiling set by the sleep behind you.</p>
+    </div>
+    <div class="br-body"><div class="windows" id="br-windows"></div></div>
+  </section>
+
+  <section class="card" aria-labelledby="bra-h">
+    <div class="card-head">
+      <h2 id="bra-h">The read</h2>
+      <p class="sub">Claude reads the figures above and tells you what they mean. It is given the measurements and told not to invent any &mdash; every number it quotes is one this page computed.</p>
+    </div>
+    <div class="br-body">
+      <div class="br-actions-row">
+        <button type="button" class="btn" id="br-go">Read my night</button>
+        <button type="button" class="btn ghost" id="br-stop" hidden>Stop</button>
+        <span class="form-msg" id="br-msg"></span>
+      </div>
+      <div id="br-out" hidden></div>
+    </div>
+  </section>
+  </div>
+
   <div class="panel" id="tab-app" role="tabpanel" aria-labelledby="tab-btn-app" hidden>
   <section class="card" aria-labelledby="app-h">
     <div class="card-head">
@@ -942,6 +1006,8 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       rhr: n.rhr == null ? null : +n.rhr,
       rested: n.rested == null ? null : +n.rested,
       free: !!n.free, note: n.note || "", source: n.source || null,
+      // carried through so the briefing can re-score the night it was measured from
+      epochs: Array.isArray(n.epochs) ? n.epochs : null, recStart: n.recStart || null,
       habits: n.habits && typeof n.habits === "object" ? n.habits : null,
       bedW: bedW, wakeW: wakeW, onsetW: onset, midW: midW,
       tib: tib, tst: tst, eff: tib > 0 ? (tst / tib) * 100 : 0,
@@ -986,6 +1052,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     target: 8 * 60,
     example: true,
     db: null,
+    briefings: {},
     profiles: [],    // everyone using this page
     pid: null,       // whose data is on screen
     profile: null,   // the active profile, resolved from the two above
@@ -1022,6 +1089,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     var b = localData.byPid[pid];
     if (!Array.isArray(b.nights)) b.nights = [];
     if (!Array.isArray(b.goals)) b.goals = [];
+    if (!b.briefings || typeof b.briefings !== "object") b.briefings = {};
     if (!b.prefs || typeof b.prefs !== "object") b.prefs = {};
     return b;
   }
@@ -2262,6 +2330,324 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     $("rec-drop").addEventListener("click", function(){ wrap.remove(); clearSession(); });
   }
 
+  /* ---------------- morning briefing ----------------
+     Every figure here is measured or computed by the page. Claude is given
+     those figures and asked to interpret them; it is never asked to work out
+     a number, because a language model asked for arithmetic will invent it. */
+
+  // How broken up the sleep was, which is a different question from how long
+  // it lasted. Consolidation counts as much as frequency: five brief stirs with
+  // no block longer than an hour is broken sleep even though little time is lost.
+  function restlessness(a){
+    if (!a || a.onset == null) return null;
+    var span = a.active.slice(a.onset, a.wake);
+    if (span.length < 2) return null;
+    var hours = span.length * EPOCH_SEC / 3600;
+    var stirs = runsOf(span, true);
+    var activeEpochs = stirs.reduce(function(t, r){ return t + r.len; }, 0);
+    var longest = runsOf(span, false).reduce(function(m, r){ return Math.max(m, r.len); }, 0);
+    var perHour = hours > 0 ? stirs.length / hours : 0;
+    var share = activeEpochs / span.length;
+    var longMin = longest * EPOCH_SEC / 60;
+    var verdict = (perHour >= 1.2 || share >= 0.12 || longMin < 45) ? "restless"
+                : (perHour < 0.6 && share < 0.06 && longMin >= 90) ? "settled"
+                : "unsettled";
+    return {
+      verdict: verdict, stirs: stirs.length, perHour: +perHour.toFixed(2),
+      activeSharePct: +(share * 100).toFixed(1),
+      longestUnbrokenMin: Math.round(longMin),
+      briefStirs: stirs.filter(function(r){ return r.len < WAKE_MIN; }).length
+    };
+  }
+
+  function nightAnalysis(L){
+    if (!L || !Array.isArray(L.epochs) || !L.epochs.length) return null;
+    return analyseNight(L.epochs);
+  }
+
+  function briefingFacts(s, hs){
+    var L = s.last;
+    if (!L) return null;
+    var a = nightAnalysis(L), r = a ? restlessness(a) : null;
+    var M = energyModel(s);
+    var fx = habitEffects(s).filter(function(f){ return f.enough; })
+      .sort(function(x, y){ return Math.abs(y.dTst) - Math.abs(x.dTst); }).slice(0, 4);
+
+    var facts = {
+      person: (state.profile && state.profile.name) || null,
+      morningOf: L.date,
+      lastNight: {
+        measuredByMicrophone: L.source === "recorded",
+        lightsOut: L.bedtime,
+        fellAsleep: clock(fromWin(L.onsetW)),
+        woke: L.waketime,
+        minutesToFallAsleep: L.latency,
+        minutesAwakeInTheNight: L.awake,
+        totalAsleep: dur(L.tst),
+        efficiencyPct: Math.round(L.eff),
+        efficiencyNote: "85% or above is the clinical mark",
+        howRestedTheyFelt: L.rested != null ? L.rested + " out of 5" : null,
+        restingHeartRate: L.rhr != null ? L.rhr + " bpm" : null
+      },
+      restlessness: r,
+      context: {
+        nightsLogged: s.all.length,
+        sleepNeed: dur(s.target),
+        averageAsleepLast14: dur(s.avgTst),
+        averageEfficiencyPct: Math.round(s.avgEff),
+        sleepDebtLast7: dur(s.debt7),
+        midsleepVariesByMin: s.recent.length >= 3 ? Math.round(s.regSd) : null,
+        socialJetlag: s.socialJetlag != null ? durShort(Math.round(s.socialJetlag)) : null
+      },
+      today: M ? {
+        energyPotential: M.potential,
+        band: energyBand(M.potential).label,
+        peakWindow: clock(M.toClock(M.peakSpan.from)) + "-" + clock(M.toClock(M.peakSpan.to)),
+        afternoonDip: clock(M.toClock(M.dipSpan.from)) + "-" + clock(M.toClock(M.dipSpan.to)),
+        secondWind: clock(M.toClock(M.eveSpan.from)) + "-" + clock(M.toClock(M.eveSpan.to)),
+        windDownFrom: clock(M.dlmo),
+        lightsOutTarget: clock(M.bedClock),
+        morningLightWindow: clock(((fromWin(s.habWake) - 120) % 1440 + 1440) % 1440) + "-" +
+                            clock(((fromWin(s.habWake) + 120) % 1440 + 1440) % 1440)
+      } : null,
+      habitsTheDayBefore: L.habits
+        ? HABITS.filter(function(h){ return L.habits[h.id] === true; }).map(function(h){ return h.label; })
+        : null,
+      whatMovesTheirSleep: fx.map(function(f){
+        return { habit: f.habit.label, minutesOfSleep: Math.round(f.dTst),
+                 nightsWith: f.nYes, nightsWithout: f.nNo };
+      }),
+      habitConsistencyPct: hs.consistency == null ? null : Math.round(hs.consistency)
+    };
+    return facts;
+  }
+
+  var BRIEF_SCHEMA =
+    '{"headline":string,"night":string,"restless":{"verdict":string,"why":string},' +
+    '"day":string,"actions":[{"when":string,"what":string,"why":string}],"watch":string}';
+
+  function briefingPrompt(facts){
+    return [
+      "You are writing the morning briefing inside someone's sleep-tracking app.",
+      "",
+      "Every figure below was measured or computed by the app. Use them exactly as given.",
+      "Do not invent, re-derive or estimate any number that is not here, and never contradict one.",
+      "Where a field is null, that information was not collected: say so plainly rather than guessing.",
+      "",
+      "THE DATA:",
+      JSON.stringify(facts, null, 1),
+      "",
+      "Reply with only this JSON, no prose around it:",
+      BRIEF_SCHEMA,
+      "",
+      "How to write it:",
+      "- Address them directly as 'you'. Plain, calm, specific. No cheerleading, no filler, no emoji.",
+      "- headline: one sentence on the night just gone. Lead with what actually matters.",
+      "- night: two or three sentences on what the night looked like, quoting real times and figures.",
+      "- restless.verdict: copy restlessness.verdict verbatim if it is present; if it is null, use",
+      "  \"not measured\" and explain in 'why' that the night was typed in rather than recorded.",
+      "- restless.why: one or two sentences citing the actual stir count, longest unbroken stretch,",
+      "  or time awake. Say what it means for how they will feel, not just the number.",
+      "- day: two or three sentences on how today is likely to go, using today.peakWindow,",
+      "  today.afternoonDip and today.energyPotential. Tie it to last night's sleep.",
+      "- actions: two to four. Each 'when' must be a real clock time or window taken from the data.",
+      "  Each 'what' is one concrete thing to do. Each 'why' ties it to a figure above.",
+      "  If whatMovesTheirSleep shows a habit costing sleep, use its real minute figure.",
+      "- watch: one sentence on the single thing most worth changing, or the thing going well",
+      "  that is worth protecting.",
+      "- You are not a doctor. No diagnoses, no medication, no supplements. If the figures look",
+      "  persistently poor, suggest once and without alarm that a doctor is worth a conversation."
+    ].join("\n");
+  }
+
+  var briefCtl = null;
+  function briefKey(){ return s_lastDate; }
+  var s_lastDate = null;
+
+  function loadBriefing(date){
+    return (state.briefings && state.briefings[date]) || null;
+  }
+  function storeBriefing(date, data){
+    if (!state.briefings) state.briefings = {};
+    state.briefings[date] = data;
+    if (readOnly()) return;
+    if (state.db) state.db.doc(profilePath() + "/briefings/" + date).set(data).catch(function(){});
+    else { localBucket(state.pid).briefings[date] = data; localWrite(); }
+  }
+
+  function brMsg(t, err){
+    var m = $("br-msg");
+    m.textContent = t;
+    m.className = "form-msg" + (err ? " err" : "");
+  }
+
+  function renderBriefing(s, hs){
+    var L = s.last;
+    s_lastDate = L ? L.date : null;
+
+    // ---- the measured half: always available, never waits on anything ----
+    var cells = $("br-measured");
+    if (!L) {
+      $("br-when").textContent = "No nights yet.";
+      cells.innerHTML = '<p class="br-none">Record or log a night and this fills in: what the night looked like, ' +
+        'whether you were restless, and how today is likely to run.</p>';
+      $("br-strip-wrap").hidden = true;
+      $("br-windows").innerHTML = "";
+      $("br-go").disabled = true;
+      $("br-out").hidden = true;
+      return;
+    }
+    $("br-go").disabled = false;
+    var a = nightAnalysis(L), r = a ? restlessness(a) : null;
+    $("br-when").textContent = "The night of " + L.date +
+      (L.source === "recorded" ? " \u00b7 measured by microphone" : " \u00b7 entered by hand");
+
+    var vChip = r
+      ? '<span class="chip ' + (r.verdict === "settled" ? "good" : r.verdict === "unsettled" ? "warn" : "crit") +
+        '"><i class="dot"></i>' + r.verdict.charAt(0).toUpperCase() + r.verdict.slice(1) + '</span>'
+      : '<span class="chip"><i class="dot"></i>Not measured</span>';
+    var eb = effBand(L.eff);
+    var list = [
+      ["Asleep", dur(L.tst)],
+      ["Efficiency", '<span class="chip ' + eb + '"><i class="dot"></i>' + L.eff.toFixed(0) + '%</span>'],
+      ["Fell asleep", clock(fromWin(L.onsetW))],
+      ["Woke", L.waketime],
+      ["Restlessness", vChip]
+    ];
+    if (r) {
+      list.push(["Times you stirred", r.stirs]);
+      list.push(["Longest unbroken", dur(r.longestUnbrokenMin)]);
+    } else {
+      list.push(["Awake in the night", L.awake + " min"]);
+    }
+    cells.innerHTML = list.map(function(c){
+      return '<div class="rec-cell"><div class="k">' + c[0] + '</div><div class="v">' + c[1] + '</div></div>';
+    }).join("");
+
+    if (a && L.recStart) {
+      $("br-strip-wrap").hidden = false;
+      renderStripInto($("br-strip"), $("br-strip-axis"), a, L.recStart);
+    } else {
+      $("br-strip-wrap").hidden = true;
+    }
+
+    // ---- the day ahead, straight from the energy model ----
+    var M = energyModel(s);
+    $("br-windows").innerHTML = M ? [
+      ["Peak", clock(M.toClock(M.peakSpan.from)) + "\u2013" + clock(M.toClock(M.peakSpan.to)), "peak", "Hardest thinking"],
+      ["Afternoon dip", clock(M.toClock(M.dipSpan.from)) + "\u2013" + clock(M.toClock(M.dipSpan.to)), "dip", "Daylight and a walk"],
+      ["Second wind", clock(M.toClock(M.eveSpan.from)) + "\u2013" + clock(M.toClock(M.eveSpan.to)), "eve", "Alert, not recovered"],
+      ["Wind down", "from " + clock(M.dlmo), "bed", "Lights out " + clock(M.bedClock)]
+    ].map(function(w){
+      return '<div class="win ' + w[2] + '"><div class="wk">' + w[0] + '</div>' +
+             '<div class="wv">' + w[1] + '</div><div class="wd">' + w[3] + '</div></div>';
+    }).join("") : '<p class="br-none">Set your schedule to see today mapped out.</p>';
+
+    // ---- the read ----
+    var saved = loadBriefing(L.date);
+    if (saved && saved.data) { paintBriefing(saved); $("br-go").textContent = "Read it again"; }
+    else { $("br-out").hidden = true; $("br-go").textContent = "Read my night"; }
+  }
+
+  function renderStripInto(svg, axis, a, startMs){
+    while (svg.childNodes.length > 1) svg.removeChild(svg.lastChild);
+    var n = a.n, W = 1000, H = 56;
+    var x = function(i){ return (i / n) * W; };
+    [false, true].forEach(function(kind){
+      runsOf(a.active, kind).forEach(function(rr){
+        var asleep = a.onset != null && rr.from >= a.onset && rr.to <= a.wake;
+        svg.appendChild(el("rect", {
+          x: x(rr.from).toFixed(2), y: 0, width: Math.max(0.6, x(rr.to) - x(rr.from)).toFixed(2), height: H,
+          fill: kind ? "var(--wake)" : "var(--sleep)", "fill-opacity": asleep ? 1 : 0.32 }));
+      });
+    });
+    [a.onset, a.wake].forEach(function(i){
+      if (i == null) return;
+      svg.appendChild(el("rect", { x: Math.max(0, x(i) - 1).toFixed(2), y: 0, width: 2, height: H,
+        fill: "var(--ink)", "fill-opacity": .85 }));
+    });
+    axis.innerHTML = "";
+    var totalMin = n * EPOCH_SEC / 60, step = totalMin > 360 ? 120 : 60;
+    for (var m = 0; m <= totalMin; m += step) {
+      var b = document.createElement("b");
+      b.style.left = ((m / totalMin) * 100).toFixed(2) + "%";
+      b.textContent = clockOf(startMs + m * 60000);
+      axis.appendChild(b);
+    }
+  }
+
+  function paintBriefing(saved){
+    var d = saved.data;
+    var out = $("br-out");
+    out.hidden = false;
+    var parts = [];
+    parts.push('<div class="br-block"><div class="br-head">' + escapeHtml(d.headline || "") + '</div></div>');
+    if (d.night) parts.push('<div class="br-block"><div class="br-k">The night</div><p class="br-para">' + escapeHtml(d.night) + '</p></div>');
+    if (d.restless && (d.restless.verdict || d.restless.why)) {
+      parts.push('<div class="br-block"><div class="br-k">Restless?</div><p class="br-para"><b>' +
+        escapeHtml(String(d.restless.verdict || "")) + '.</b> ' + escapeHtml(String(d.restless.why || "")) + '</p></div>');
+    }
+    if (d.day) parts.push('<div class="br-block"><div class="br-k">Today</div><p class="br-para">' + escapeHtml(d.day) + '</p></div>');
+    if (Array.isArray(d.actions) && d.actions.length) {
+      parts.push('<div class="br-block"><div class="br-k">What to do</div>' +
+        d.actions.slice(0, 5).map(function(x){
+          return '<div class="br-do"><span class="br-when">' + escapeHtml(String(x.when || "")) + '</span>' +
+            '<span><span class="br-what">' + escapeHtml(String(x.what || "")) + '</span>' +
+            (x.why ? '<div class="br-why">' + escapeHtml(String(x.why)) + '</div>' : '') + '</span></div>';
+        }).join("") + '</div>');
+    }
+    if (d.watch) parts.push('<div class="br-block"><p class="br-watch"><b>Worth watching.</b> ' + escapeHtml(d.watch) + '</p></div>');
+    parts.push('<div class="br-block"><p class="br-stamp">Written ' +
+      escapeHtml(new Date(saved.generated).toLocaleString()) + ' from the figures above.</p></div>');
+    out.innerHTML = parts.join("");
+  }
+
+  function askForBriefing(){
+    var s = stats(), hs = habitStats(s);
+    var facts = briefingFacts(s, hs);
+    if (!facts) { brMsg("There is no night to read yet.", true); return; }
+    if (!(window.claude && typeof window.claude.use === "function")) {
+      brMsg("Asking Claude is only available inside the Claude viewer. The measurements above are all here either way.", true);
+      return;
+    }
+    var date = facts.morningOf;
+    briefCtl = new AbortController();
+    $("br-go").disabled = true;
+    $("br-stop").hidden = false;
+    $("br-out").hidden = false;
+    $("br-out").innerHTML = '<div class="br-thinking"><i></i><span id="br-think">Reading your night\u2026</span></div>';
+
+    window.claude.use("sample").then(function(sample){
+      if (!sample) throw { code: "not_granted" };
+      return sample.json(briefingPrompt(facts), {
+        signal: briefCtl.signal,
+        cache: false,
+        onText: function(){ var t = $("br-think"); if (t) t.textContent = "Writing it up\u2026"; }
+      });
+    }).then(function(data){
+      if (!data || typeof data !== "object") throw { code: "invalid_json" };
+      var saved = { date: date, generated: new Date().toISOString(), data: data };
+      storeBriefing(date, saved);
+      paintBriefing(saved);
+      brMsg("");
+      $("br-go").textContent = "Read it again";
+    }).catch(function(e){
+      var c = e && e.code;
+      $("br-out").hidden = true;
+      if (c === "cancelled") { brMsg(""); return; }
+      if (c === "not_granted" || c === "not_declared" || c === "sampling_disabled" || c === "capability_disabled")
+        brMsg("Claude is not available to this page, so the read is off. Everything measured above still stands.", true);
+      else if (c === "rate_limited") brMsg("Too many requests just now \u2014 give it a minute and try again.", true);
+      else if (c === "invalid_json" || c === "empty_completion") brMsg("That came back in a shape the page could not read. Try again.", true);
+      else if (c === "prompt_too_large") brMsg("Too much data to send at once.", true);
+      else brMsg("Could not get a read just now" + (e && e.message ? ": " + e.message : "."), true);
+    }).then(function(){
+      $("br-go").disabled = false;
+      $("br-stop").hidden = true;
+      briefCtl = null;
+    });
+  }
+
   /* ---------------- download, export, import ---------------- */
   function dlMsg(text, isErr){
     var m = $("dl-msg");
@@ -2402,7 +2788,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   var setupOpen = false;
   var welcomeMode = "form";   // "choose" when there are people to pick between
   var editingId = null;       // profile being edited, null when creating
-  var TABS = ["today", "sleep", "clock", "habits", "goals", "app"];
+  var TABS = ["today", "sleep", "clock", "habits", "goals", "brief", "app"];
   var activeTab = "today";
   try { var saved = localStorage.getItem("midsleep.tab"); if (TABS.indexOf(saved) >= 0) activeTab = saved; } catch (e) {}
 
@@ -2520,6 +2906,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     renderDial(s);
     renderTable(s);
     renderGoals(s);
+    renderBriefing(s, hs);
     renderDownload();
 
     var banner = $("banner");
@@ -2627,12 +3014,14 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     dropActive();
     state.nights = [];
     state.goals = [];
+    state.briefings = {};
     state.target = 8 * 60;
     if (!state.db) {
       if (state.pid) {
         var bk = localBucket(state.pid);
         state.nights = bk.nights.slice();
         state.goals = bk.goals.filter(function(g){ return metricById(g.metric) && isFinite(g.target); });
+        state.briefings = bk.briefings || {};
         if (typeof bk.prefs.targetMinutes === "number") state.target = bk.prefs.targetMinutes;
         sortDocs();
       }
@@ -2665,6 +3054,14 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
         var v = d.data() || {};
         return { metric: v.metric || d.id, target: +v.target };
       }).filter(function(g){ return metricById(g.metric) && isFinite(g.target); });
+      render();
+    }, function(){}));
+
+    unsubActive.push(db.collection(profilePath() + "/briefings").limit(60).onSnapshot(function(snap){
+      if (state.pid !== forPid) return;
+      var out = {};
+      snap.docs.forEach(function(d){ var v = d.data() || {}; out[v.date || d.id] = v; });
+      state.briefings = out;
       render();
     }, function(){}));
 
@@ -2885,6 +3282,9 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       }
     }
   }
+
+  $("br-go").addEventListener("click", function(){ askForBriefing(); });
+  $("br-stop").addEventListener("click", function(){ if (briefCtl) briefCtl.abort(); });
 
   $("rec-go").addEventListener("click", function(){ startRecording(); });
   $("rec-stop").addEventListener("click", function(){ stopRecording(); });

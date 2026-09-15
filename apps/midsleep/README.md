@@ -157,6 +157,48 @@ tab mid-night offers to score what was measured instead of losing it.
 Sound is not polysomnography. A restless partner, a pet or traffic reads as
 movement, so every scored night is editable in the form below it.
 
+### The morning briefing
+
+The Briefing tab reads the night back each morning. It has two halves, and the
+split is the point:
+
+**Measured** — renders instantly and never waits on anything: time asleep,
+efficiency, sleep onset, wake, the restlessness verdict, the strip chart of the
+night, and today's peak / dip / second wind / wind-down.
+
+**Interpreted** — Claude is handed those figures through the `sample` capability
+and asked what they mean. It is told explicitly not to invent, re-derive or
+estimate any number, because a language model asked for arithmetic will invent
+it. Every figure it quotes is one this page computed. It returns JSON
+(`headline`, `night`, `restless`, `day`, `actions[]`, `watch`) which is rendered
+into the app's own components rather than dumped as prose, and is told it is not
+a doctor.
+
+Briefings are cached per morning at `profiles/<pid>/briefings/<date>`, so opening
+the tab again replays the stored read rather than spending the viewer's usage
+twice. Sampling costs the *viewer's* Claude allowance, so it runs on an explicit
+press, never on load or a timer.
+
+When `sample` is unavailable — outside the Claude viewer, or consent declined —
+the measured half still renders in full and the read says so.
+
+### Restlessness
+
+Scored from the epoch series, and deliberately separate from duration: a night
+can be long and still broken.
+
+| Signal | Meaning |
+| --- | --- |
+| Stirs per hour | how often sleep was disturbed at all |
+| Active share | proportion of the sleep period spent moving |
+| Longest unbroken stretch | how consolidated the sleep was |
+
+`restless` if stirs ≥ 1.2/h, or active share ≥ 12%, or nothing longer than 45
+minutes unbroken; `settled` only if stirs < 0.6/h, share < 6% **and** at least 90
+minutes unbroken; `unsettled` between. Consolidation carries its own weight
+because five brief stirs with no block over an hour is broken sleep even though
+almost no time is lost.
+
 ### Recovery
 
 Weighted from five components, each 0–100. A component with no data is dropped
