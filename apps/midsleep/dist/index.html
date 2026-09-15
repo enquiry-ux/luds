@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Sleep, body clock, habits and goals. Records your night to work out when you actually fell asleep.">
+<meta name="description" content="Sleep, body clock, habits and goals. Works out your peak, your dip and when to wind down.">
 <meta name="theme-color" content="#eef0e9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c0d12" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
@@ -421,9 +421,6 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
 .rec-privacy{font-size:12.5px;color:var(--ink-2);line-height:1.5;padding:11px 13px;border-radius:8px;
   background:var(--inset);border:1px solid var(--ring);border-left:3px solid var(--good)}
 .rec-privacy b{color:var(--ink)}
-.rec-blocked{font-size:12.5px;color:var(--ink-2);line-height:1.5;padding:11px 13px;border-radius:8px;
-  background:var(--inset);border:1px solid var(--ring);border-left:3px solid var(--wake)}
-.rec-blocked b{color:var(--ink)}
 .rec-start{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3)}
 .rec-live{display:grid;grid-template-columns:auto 1fr;gap:var(--s4);align-items:center;
   padding:var(--s4);border-radius:10px;background:var(--inset);border:1px solid var(--ring)}
@@ -615,55 +612,6 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   </div>
 
   <div class="panel" id="tab-sleep" role="tabpanel" aria-labelledby="tab-btn-sleep" hidden>
-  <!-- ============ RECORDER ============ -->
-  <section class="card" aria-labelledby="rec-h">
-    <div class="card-head">
-      <h2 id="rec-h">Record your night</h2>
-      <p class="sub">Leave this running by the bed and it works out when you actually fell asleep, whether you stirred, and when you finally woke &mdash; then fills the night in for you.</p>
-    </div>
-    <div class="rec-body">
-      <p class="rec-privacy" id="rec-privacy"><b>No audio is kept.</b> The microphone is measured, never recorded: every 30 seconds becomes a single loudness number and the sound itself is thrown away in the same instant. Nothing is saved, nothing is sent anywhere, and there is nothing that could be played back.</p>
-
-      <p class="rec-blocked" id="rec-blocked" hidden></p>
-
-      <div class="rec-start" id="rec-idle">
-        <button type="button" class="btn" id="rec-go">Start recording</button>
-        <label class="switch" for="rec-wake"><input type="checkbox" id="rec-wake" checked> Keep the screen awake</label>
-        <span class="form-msg" id="rec-msg"></span>
-      </div>
-
-      <div class="rec-live" id="rec-running" hidden>
-        <div>
-          <div class="rec-clock" id="rec-elapsed">0:00</div>
-          <div class="rec-sub" id="rec-since">&mdash;</div>
-        </div>
-        <div>
-          <div class="rec-meter"><div class="rec-fill" id="rec-fill"></div></div>
-          <div class="rec-state">
-            <i class="rec-dot" aria-hidden="true"></i>
-            <span id="rec-state">Listening</span>
-            <button type="button" class="btn danger" id="rec-stop" style="margin-left:auto">I'm awake &mdash; stop</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="rec-out" hidden>
-        <div class="rec-results" id="rec-cells"></div>
-        <div style="margin-top:var(--s4)">
-          <svg class="rec-strip" id="rec-strip" preserveAspectRatio="none" viewBox="0 0 1000 56" role="img" aria-labelledby="strip-alt">
-            <title id="strip-alt">The night as measured: quiet stretches and periods of movement</title>
-          </svg>
-          <div class="rec-axis" id="rec-strip-axis"></div>
-        </div>
-        <div class="rec-legend" style="margin-top:var(--s3)">
-          <span><i style="background:var(--sleep)"></i> Settled &mdash; scored as asleep</span>
-          <span><i style="background:var(--wake)"></i> Movement &mdash; scored as awake</span>
-        </div>
-        <p class="rec-warn" style="margin-top:var(--s4)" id="rec-verdict"></p>
-      </div>
-    </div>
-  </section>
-
   <!-- ============ RECOVERY ============ -->
   <section class="card" aria-labelledby="rec-h">
     <div class="card-head">
@@ -931,7 +879,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       <div class="dl-row">
         <div class="dl-text">
           <h3>The app, as a file</h3>
-          <p>Everything &mdash; the energy model, the actogram, the body clock, habits and goals &mdash; in a single file of about <span class="mono" id="dl-size">&mdash;</span>. Open it by double-clicking and it runs, offline, with the microphone available. It keeps its own diary in whichever browser opens it. <span id="dl-file-note"></span></p>
+          <p>Everything &mdash; the energy model, the actogram, the body clock, habits and goals &mdash; in a single file of about <span class="mono" id="dl-size">&mdash;</span>. Open it by double-clicking and it runs, offline, with nothing to install. It keeps its own diary in whichever browser opens it. <span id="dl-file-note"></span></p>
         </div>
         <button type="button" class="btn" id="dl-app">Download the app</button>
       </div>
@@ -1958,7 +1906,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       var eb = effBand(n.eff);
       var tr = document.createElement("tr");
       tr.innerHTML =
-        '<td>' + n.date + (n.source === "recorded" ? ' <span title="Measured by overnight recording" style="color:var(--sleep)">◉</span>' : '') +
+        '<td>' + n.date +
           '</td><td>' + DOW[dowIdx(n.date)] + (n.free ? ' ○' : '') + '</td>' +
         '<td>' + n.bedtime + '</td><td>' + n.waketime + '</td>' +
         '<td class="num">' + durShort(n.tst) + '</td>' +
@@ -2110,10 +2058,10 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     return isNaN(v) ? null : v;
   }
 
-  /* ---------------- overnight recorder ----------------
-     The microphone is measured, never recorded. Each 30-second epoch (the
-     standard polysomnography epoch) is reduced to one peak-loudness number and
-     the samples are discarded; no audio is retained anywhere.
+  /* ---------------- night scoring ----------------
+     Kept for nights recorded by an earlier build, which stored one loudness
+     number per 30-second epoch (the standard polysomnography epoch). Nothing
+     produces new ones: nights are entered by hand.
 
      Scoring follows actigraphy convention: sleep onset is the start of the
      first sustained quiet stretch, an awakening is sustained movement between
@@ -2122,7 +2070,6 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   var QUIET_FOR_SLEEP = 20;   // 10 min settled = asleep
   var WAKE_MIN = 4;           // 2 min of movement = an awakening
   var QUIET_MIN = 10;         // 5 min of quiet ends one
-  var RKEY = "midsleep.rec";
   var GAP = -1;               // an epoch no audio ran for, distinct from a silent one
 
   function runsOf(flags, want){
@@ -2169,247 +2116,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
              gaps: gaps, unmeasured: unmeasured, longestGap: longestGap };
   }
 
-  var rec = { on: false, startMs: 0, levels: [], epochStart: 0, peak: 0, live: 0,
-              stream: null, ctx: null, proc: null, wake: null, ui: null, flush: 0 };
-
   function clockOf(ms){ var d = new Date(ms); return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0"); }
-  function isoOf(ms){ var d = new Date(ms); return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
-  function recMsg(t, err){
-    var m = $("rec-msg");
-    m.textContent = t; m.className = "form-msg" + (err ? " err" : "");
-  }
-  function saveSession(){
-    try { window.localStorage.setItem(RKEY, JSON.stringify({ startMs: rec.startMs, levels: rec.levels })); } catch (e) {}
-  }
-  function clearSession(){ try { window.localStorage.removeItem(RKEY); } catch (e) {} }
-
-  async function startRecording(){
-    if (rec.on) return;
-    if (readOnly()) { recMsg("Set up your own schedule first \u2014 example data cannot be changed.", true); return; }
-    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
-      recMsg("This browser will not give a page microphone access.", true); return;
-    }
-    recMsg("Asking for the microphone\u2026");
-    try {
-      rec.stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
-      });
-    } catch (e) {
-      var framed = isFramed();
-      var name = e && e.name;
-      if (name === "NotFoundError" || name === "DevicesNotFoundError") recMsg("No microphone found on this device.", true);
-      else if (framed) recMsg("The microphone is blocked because this page is embedded inside Claude. The Download tab explains how to open it on its own, where recording works. (" + (name || "blocked") + ")", true);
-      else recMsg("Microphone access was refused. Allow it for this site and try again.", true);
-      return;
-    }
-
-    var AC = window.AudioContext || window.webkitAudioContext;
-    rec.ctx = new AC();
-    if (rec.ctx.state === "suspended") { try { await rec.ctx.resume(); } catch (e) {} }
-    var src = rec.ctx.createMediaStreamSource(rec.stream);
-    rec.proc = rec.ctx.createScriptProcessor(4096, 1, 1);
-    // A ScriptProcessor only runs while connected to the destination, so route it
-    // through a silent gain: without this the microphone would feed the speakers.
-    var mute = rec.ctx.createGain();
-    mute.gain.value = 0;
-
-    rec.on = true;
-    rec.startMs = Date.now();
-    rec.epochStart = rec.startMs;
-    rec.levels = [];
-    rec.peak = 0;
-    rec.flush = 0;
-
-    rec.proc.onaudioprocess = function(e){
-      var d = e.inputBuffer.getChannelData(0), sum = 0;
-      for (var i = 0; i < d.length; i++) sum += d[i] * d[i];
-      var rms = Math.sqrt(sum / d.length);
-      if (rms > rec.peak) rec.peak = rms;
-      rec.live = rms;
-      var now = Date.now();
-      if (now - rec.epochStart >= EPOCH_MS) {
-        // The epoch that was genuinely being sampled when the boundary passed.
-        rec.levels.push(Math.min(1000, Math.round(rec.peak * 1000)));
-        rec.peak = 0;
-        rec.epochStart += EPOCH_MS;
-        // Anything further behind is time no audio ran for: a phone that locked,
-        // an app sent to the background, a tab frozen. Silence and "not measured"
-        // are not the same claim, so those epochs are marked, never scored as quiet.
-        while (now - rec.epochStart >= EPOCH_MS) {
-          rec.levels.push(GAP);
-          rec.epochStart += EPOCH_MS;
-        }
-        if (++rec.flush >= 4) { rec.flush = 0; saveSession(); }   // survive a crash
-      }
-    };
-    src.connect(rec.proc); rec.proc.connect(mute); mute.connect(rec.ctx.destination);
-
-    if ($("rec-wake").checked && navigator.wakeLock) {
-      try { rec.wake = await navigator.wakeLock.request("screen"); } catch (e) { rec.wake = null; }
-    }
-    recMsg("");
-    $("rec-idle").hidden = true;
-    $("rec-running").hidden = false;
-    $("rec-out").hidden = true;
-    rec.ui = window.setInterval(tickRecordingUI, 250);
-    tickRecordingUI();
-  }
-
-  function tickRecordingUI(){
-    if (!rec.on) return;
-    var secs = Math.floor((Date.now() - rec.startMs) / 1000);
-    var h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60);
-    $("rec-elapsed").textContent = h + ":" + String(m).padStart(2, "0");
-    $("rec-since").textContent = "since " + clockOf(rec.startMs) + " \u00b7 " + rec.levels.length + " epochs";
-    var lvl = Math.min(100, Math.round(rec.live * 900));
-    var fill = $("rec-fill");
-    fill.style.width = Math.max(2, lvl) + "%";
-    fill.className = "rec-fill" + (lvl > 35 ? " loud" : "");
-    $("rec-state").textContent = lvl > 35 ? "Movement" : "Settled";
-  }
-
-  async function stopRecording(){
-    if (!rec.on) return;
-    rec.on = false;
-    if (rec.ui) { window.clearInterval(rec.ui); rec.ui = null; }
-    if (rec.peak > 0 || rec.levels.length === 0) rec.levels.push(Math.min(1000, Math.round(rec.peak * 1000)));
-    try { rec.proc.disconnect(); } catch (e) {}
-    try { rec.stream.getTracks().forEach(function(t){ t.stop(); }); } catch (e) {}
-    try { await rec.ctx.close(); } catch (e) {}
-    if (rec.wake) { try { await rec.wake.release(); } catch (e) {} rec.wake = null; }
-    $("rec-running").hidden = true;
-    $("rec-idle").hidden = false;
-    finishRecording(rec.startMs, rec.levels);
-    clearSession();
-  }
-
-  function finishRecording(startMs, levels){
-    var a = analyseNight(levels);
-    $("rec-out").hidden = false;
-    if (!a) {
-      $("rec-cells").innerHTML = "";
-      $("rec-strip").innerHTML = "";
-      $("rec-strip-axis").innerHTML = "";
-      $("rec-verdict").textContent = "That recording was under ten minutes \u2014 too short to score. Nothing was saved.";
-      return;
-    }
-    renderStrip(a, levels, startMs);
-
-    var gapMin = Math.round((a.unmeasured || 0) * EPOCH_SEC / 60);
-    var worstMin = Math.round((a.longestGap || 0) * EPOCH_SEC / 60);
-    var worst = null;
-    (a.gaps || []).forEach(function(r){ if (r.len === a.longestGap) { worst = worst || r; } });
-    if (worst && (worstMin >= 20 || a.unmeasured > 0.1 * a.n)) {
-      $("rec-cells").innerHTML = "";
-      $("rec-verdict").innerHTML =
-        "<b>Nothing was heard for " + durWords(worstMin) + "</b>, from " +
-        clockOf(startMs + worst.from * EPOCH_MS) + " to " + clockOf(startMs + worst.to * EPOCH_MS) +
-        (gapMin > worstMin ? ", plus " + durWords(gapMin - worstMin) + " in shorter breaks" : "") +
-        ". That is what a locked screen or a backgrounded app looks like: the microphone stops, and " +
-        "calling that silence would be a guess rather than a measurement. Nothing was saved. Fill the " +
-        "form in below if you know roughly how the night went, and next time leave the app in front " +
-        "with the screen kept awake and the phone on charge.";
-      return;
-    }
-
-    if (a.onset == null) {
-      $("rec-cells").innerHTML = "";
-      $("rec-verdict").textContent = "No settled stretch of ten minutes or more turned up, so this was not scored as sleep and nothing was saved. " +
-        "If the room was noisy all night, log it by hand below.";
-      return;
-    }
-    var onsetMs = startMs + a.onset * EPOCH_MS;
-    var wakeMs = startMs + a.wake * EPOCH_MS;
-    var latency = Math.max(0, Math.round((onsetMs - startMs) / 60000));
-    var waso = Math.round(a.awakenings.reduce(function(sum, r){ return sum + r.len * EPOCH_SEC / 60; }, 0));
-    var tib = Math.round((wakeMs - startMs) / 60000);
-    var date = isoOf(wakeMs);
-
-    var cells = [
-      ["Lights out", clockOf(startMs)],
-      ["Fell asleep", clockOf(onsetMs)],
-      ["Woke", clockOf(wakeMs)],
-      ["Asleep", dur(Math.max(0, tib - latency - waso))],
-      ["Took to fall asleep", latency + " min"],
-      ["Awake in the night", waso + " min"]
-    ];
-    $("rec-cells").innerHTML = cells.map(function(c){
-      return '<div class="rec-cell"><div class="k">' + c[0] + '</div><div class="v">' + c[1] + '</div></div>';
-    }).join("");
-
-    var saved = upsertNight(date, {
-      bedtime: clockOf(startMs), waketime: clockOf(wakeMs),
-      latency: latency, awake: waso, source: "recorded",
-      recStart: startMs, epochs: levels
-    });
-    $("rec-verdict").innerHTML = saved
-      ? "<b>Saved to " + date + ".</b> " + a.awakenings.length + " awakening" + (a.awakenings.length === 1 ? "" : "s") +
-        " scored." + (gapMin > 0 ? " " + durWords(gapMin) + " of it went unmeasured and was left out of the scoring." : "") +
-        " These are estimates from sound, not a sleep lab \u2014 a restless partner or a passing lorry can read as movement, " +
-        "so correct anything that looks wrong in the form below."
-      : "Scored, but not saved.";
-    $("f-date").value = date;
-    syncFormToDate();
-  }
-
-  function renderStrip(a, levels, startMs){
-    var svg = $("rec-strip");
-    while (svg.childNodes.length > 1) svg.removeChild(svg.lastChild);
-    var n = a.n, W = 1000, H = 56;
-    var x = function(i){ return (i / n) * W; };
-    ["false", "true"].forEach(function(kind){
-      runsOf(a.active, kind === "true").forEach(function(r){
-        var asleep = a.onset != null && r.from >= a.onset && r.to <= a.wake;
-        svg.appendChild(el("rect", {
-          x: x(r.from).toFixed(2), y: 0, width: Math.max(0.6, x(r.to) - x(r.from)).toFixed(2), height: H,
-          fill: kind === "true" ? "var(--wake)" : "var(--sleep)",
-          "fill-opacity": asleep ? 1 : 0.32
-        }));
-      });
-    });
-    (a.gaps || []).forEach(function(r){
-      svg.appendChild(el("rect", { x: x(r.from).toFixed(2), y: 0,
-        width: Math.max(0.6, x(r.to) - x(r.from)).toFixed(2), height: H, fill: "var(--grid)" }));
-    });
-    [a.onset, a.wake].forEach(function(i){
-      if (i == null) return;
-      svg.appendChild(el("rect", { x: Math.max(0, x(i) - 1).toFixed(2), y: 0, width: 2, height: H, fill: "var(--ink)", "fill-opacity": .85 }));
-    });
-    var axis = $("rec-strip-axis");
-    axis.innerHTML = "";
-    var totalMin = n * EPOCH_SEC / 60, step = totalMin > 360 ? 120 : 60;
-    for (var m = 0; m <= totalMin; m += step) {
-      var b = document.createElement("b");
-      b.style.left = ((m / totalMin) * 100).toFixed(2) + "%";
-      b.textContent = clockOf(startMs + m * 60000);
-      axis.appendChild(b);
-    }
-  }
-
-  function offerResume(){
-    var raw = null;
-    try { raw = window.localStorage.getItem(RKEY); } catch (e) {}
-    if (!raw) return;
-    var sess;
-    try { sess = JSON.parse(raw); } catch (e) { clearSession(); return; }
-    if (!sess || !sess.startMs || !Array.isArray(sess.levels) || sess.levels.length < QUIET_FOR_SLEEP) { clearSession(); return; }
-    recMsg("");
-    var box = $("rec-idle");
-    if ($("rec-resume")) return;
-    var wrap = document.createElement("div");
-    wrap.id = "rec-resume";
-    wrap.className = "rec-warn";
-    wrap.style.flexBasis = "100%";
-    wrap.innerHTML = "<b>A recording from " + clockOf(sess.startMs) + " was interrupted</b> \u2014 the page closed before it was stopped. " +
-      Math.round(sess.levels.length * EPOCH_SEC / 60) + " minutes were measured. " +
-      '<button type="button" class="link-plain" id="rec-finish">Score and save it</button> &middot; ' +
-      '<button type="button" class="link-plain" id="rec-drop">Discard</button>';
-    box.appendChild(wrap);
-    $("rec-finish").addEventListener("click", function(){
-      wrap.remove(); clearSession(); finishRecording(sess.startMs, sess.levels);
-    });
-    $("rec-drop").addEventListener("click", function(){ wrap.remove(); clearSession(); });
-  }
 
   /* ---------------- morning briefing ----------------
      Every figure here is measured or computed by the page. Claude is given
@@ -2573,7 +2280,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     } else {
       restless = { verdict: "not measured",
         why: "This night was entered by hand rather than recorded, so there is no movement to read. The " +
-             plural(L.awake, "minute", "minutes") + " you logged awake is all there is to go on \u2014 record a night and this fills in properly." };
+             plural(L.awake, "minute", "minutes") + " you logged awake is all there is to go on." };
     }
 
     /* ---- the day ---- */
@@ -2704,7 +2411,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     var cells = $("br-measured");
     if (!L) {
       $("br-when").textContent = "No nights yet.";
-      cells.innerHTML = '<p class="br-none">Record or log a night and this fills in: what the night looked like, ' +
+      cells.innerHTML = '<p class="br-none">Log a night and this fills in: what the night looked like, ' +
         'whether you were restless, and how today is likely to run.</p>';
       $("br-strip-wrap").hidden = true;
       $("br-windows").innerHTML = "";
@@ -2715,7 +2422,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     $("br-go").disabled = false;
     var a = nightAnalysis(L), r = a ? restlessness(a) : null;
     $("br-when").textContent = "The night of " + L.date +
-      (L.source === "recorded" ? " \u00b7 measured by microphone" : " \u00b7 entered by hand");
+      (L.source === "recorded" ? " \u00b7 measured" : " \u00b7 entered by hand");
 
     var vChip = r
       ? '<span class="chip ' + (r.verdict === "settled" ? "good" : r.verdict === "unsettled" ? "warn" : "crit") +
@@ -3028,21 +2735,20 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     if (isInstalled()) {
       h.textContent = "Already installed";
       body.innerHTML = "<p>You are running the installed copy. It opens with no connection, " +
-        "keeps its own diary on this device, and can use the microphone to record your night.</p>";
+        "keeps its own diary on this device.</p>";
       return;
     }
 
     if (isFramed()) {
       h.textContent = "This copy is running inside Claude";
       body.innerHTML =
-        "<p>A page embedded in another site cannot install itself or reach the microphone \u2014 " +
-        "that is the browser\u2019s rule, not a setting anyone can change from in here.</p>" +
+        "<p>A page embedded in another site cannot install itself \u2014 that is the browser\u2019s " +
+        "rule, not a setting anyone can change from in here.</p>" +
         "<p><b>On an iPhone, a downloaded file cannot become a home screen app.</b> " +
         "Only a page opened in Safari at its own web address can. Put the folder from the " +
         "download below on any web host, open that address in Safari, then Share \u2192 " +
         "<b>Add to Home Screen</b>.</p>" +
-        "<p>On a computer the downloaded file is enough on its own: open it and everything, " +
-        "recording included, works.</p>";
+        "<p>On a computer the downloaded file is enough on its own: open it and it runs.</p>";
       return;
     }
 
@@ -3063,8 +2769,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
         "<li>Tap <b>Share</b> \u2014 the square with the arrow.</li>" +
         "<li>Scroll down and tap <b>Add to Home Screen</b>.</li>" +
         "<li>Tap <b>Add</b>.</li></ol>" +
-        "<p>It then opens full screen with its own icon, runs with no connection, and can " +
-        "ask for the microphone so it can record your night.</p>" +
+        "<p>It then opens full screen with its own icon and runs with no connection.</p>" +
         "<p class=\"dl-where\">" + escapeHtml(location.href.split("#")[0]) + "</p>";
       copy.hidden = false;
       return;
@@ -3085,20 +2790,6 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       : "<p>Look for <b>Install</b> in the address bar or the browser menu. If it is not offered, " +
         "the downloaded file below runs the same app with nothing to install.</p>";
     copy.hidden = false;
-  }
-
-  // The microphone is refused to any page embedded in another site, so inside the
-  // viewer this card can only ever fail. Say so where it is read, rather than
-  // leaving a button whose one outcome is a red error.
-  function renderRecorder(){
-    var blocked = isFramed() || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-    var note = $("rec-blocked");
-    note.hidden = !blocked;
-    $("rec-go").disabled = blocked;
-    if (!blocked) return;
-    note.innerHTML = isFramed()
-      ? "<b>Recording cannot run here.</b> This page is open inside Claude, and a browser refuses the microphone to any page embedded in another site \u2014 nothing in the app itself can change that. The same app opened at its own address, or from a home screen, gets the microphone. Everything else on this page works as it is."
-      : "<b>This browser will not give the page a microphone.</b> Everything else works \u2014 log your nights by hand below.";
   }
 
   function renderDownload(){
@@ -3313,7 +3004,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     } else if (!isFramed() && isHosted() && !isInstalled() && !installHintDone()) {
       banner.hidden = false;
       banner.innerHTML = '<b>Put Midsleep on your Home Screen.</b> ' +
-        (isIOS ? 'Share \u2192 Add to Home Screen. It then opens full screen, works with no connection, and can record your night.'
+        (isIOS ? 'Share \u2192 Add to Home Screen. It then opens full screen and works with no connection.'
                : 'Your browser\u2019s menu offers Install. It then opens in its own window and works with no connection.') +
         ' <button type="button" class="link-plain" id="hint-done">Got it</button>';
     } else {
@@ -3686,15 +3377,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     render();
   });
 
-  $("rec-go").addEventListener("click", function(){ startRecording(); });
-  $("rec-stop").addEventListener("click", function(){ stopRecording(); });
   // the lock drops when the tab is hidden; take it back when we return
-  document.addEventListener("visibilitychange", function(){
-    if (document.visibilityState === "visible" && rec.on && !rec.wake && $("rec-wake").checked && navigator.wakeLock) {
-      navigator.wakeLock.request("screen").then(function(w){ rec.wake = w; }).catch(function(){});
-    }
-  });
-  window.addEventListener("beforeunload", function(){ if (rec.on) saveSession(); });
 
   $("dl-copy-link").addEventListener("click", function(){
     var url = location.href.split("#")[0];
@@ -3928,9 +3611,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   /* ---------------- boot ---------------- */
   buildFormHabits();
   applyTabVisibility();
-  renderRecorder();
   probeSample();
-  offerResume();
   setTab(activeTab, true);
   setDefaultDate();
   syncFormToDate();

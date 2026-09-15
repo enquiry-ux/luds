@@ -125,41 +125,16 @@ against nights it did not, reporting the difference in minutes and efficiency.
 Three nights minimum on each side before anything is reported. These are
 observed differences between your own nights, not proof of cause.
 
-### Overnight recording
+### Nights are entered by hand
 
-The Sleep tab can measure the night by microphone and fill the entry in itself.
+An earlier build measured the night by microphone and filled the entry in itself.
+It was removed at the owner's request: the app they use runs inside the artifact
+viewer, where a browser refuses the microphone to any embedded page, so the card
+could only ever fail there. Nights are typed into the Sleep tab.
 
-**No audio is retained.** The stream is measured, never recorded: each 30-second
-epoch is reduced to one peak-loudness number and the samples are discarded in the
-same callback. Nothing is stored, nothing is uploaded, and there is no buffer that
-could be played back. A silent gain node sits between the capture node and the
-destination, so the microphone never reaches the speakers.
-
-Scoring follows actigraphy convention on 30-second epochs (the polysomnography
-standard), with a threshold set from the room's own noise floor and dynamic range
-so a quiet bedroom and a noisy street both score sensibly:
-
-| Landmark | Rule |
-| --- | --- |
-| Sleep onset | start of the first quiet stretch of 10 minutes or more |
-| Awakening | 2 minutes or more of sustained movement between onset and wake |
-| Final wake | end of the last quiet stretch of 5 minutes or more |
-
-The scored night is written straight to the diary — lights out, sleep onset,
-latency, time awake, wake time — marked `source: "recorded"` and shown with a
-filled circle in the log. The epoch series is kept on the night document (about
-3 KB for eight hours) to draw the strip chart.
-
-Verified against synthetic nights with known answers: onset, wake and total
-awakening minutes are recovered exactly, a +200 noise floor shifts the threshold
-rather than the result, a night with no settled stretch is refused rather than
-invented, and recordings under ten minutes are not scored.
-
-Progress is written to `localStorage` every two minutes, so a crash or a closed
-tab mid-night offers to score what was measured instead of losing it.
-
-Sound is not polysomnography. A restless partner, a pet or traffic reads as
-movement, so every scored night is editable in the form below it.
+The scoring that read those recordings is kept, because a night stored by the old
+build still carries its epochs and still renders; nothing produces new ones. The
+git history holds the recorder itself if it is ever wanted back.
 
 ### The morning briefing
 
@@ -184,7 +159,7 @@ two, and the card always says which one is on screen. The agent button is hidden
 entirely where the capability is absent, so a standalone copy shows no dead
 control.
 
-### Time the page did not hear
+### Time the old recorder did not hear
 
 Epochs are driven by the wall clock, so a suspended page (a locked phone, an app
 in the background, a frozen tab) does not shift the timeline — but it does leave
