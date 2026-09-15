@@ -43,14 +43,14 @@ anything.
 | Tab | Holds |
 | --- | --- |
 | Today | Energy curve, live "right now" reading, peak/dip/second-wind/wind-down windows, summary tiles |
+| Sleep | Overnight recorder, recovery score, actogram, the night form, the full log |
+| Briefing | The night read back each morning, and the day ahead |
 | Body clock | 24-hour dial, midsleep, chronotype, social jetlag, light timing |
 | Habits | Tonight's checklist with streaks, consistency, and what moves your sleep |
 | Goals | Targets on measured metrics, with progress and week-on-week trend |
-| Sleep | Overnight recorder, recovery score, actogram, the night form, the full log |
-| Briefing | The night read back each morning, and the day ahead |
 
-Sleep and Briefing sit together at the end: one records the night, the other
-reads it back.
+The first three follow the morning: where today stands, what last night was,
+and what it means. The reference tabs sit behind them.
 
 ## Goals
 
