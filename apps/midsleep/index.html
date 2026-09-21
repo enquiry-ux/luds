@@ -721,8 +721,8 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       <table>
         <thead>
           <tr>
-            <th>Morning</th><th>Day</th><th>Lights out</th><th>Woke</th>
-            <th class="num">Asleep</th><th class="num">Efficiency</th>
+            <th>Morning</th><th>Day</th><th>Lights out</th>
+            <th class="num">Asleep</th><th>Woke</th><th class="num">Efficiency</th>
             <th class="num">Midsleep</th><th class="num">RHR</th><th>Habits</th>
             <th>Note</th><th></th>
           </tr>
@@ -1895,8 +1895,9 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
       tr.innerHTML =
         '<td>' + n.date +
           '</td><td>' + DOW[dowIdx(n.date)] + (n.free ? ' ○' : '') + '</td>' +
-        '<td>' + n.bedtime + '</td><td>' + n.waketime + '</td>' +
+        '<td>' + n.bedtime + '</td>' +
         '<td class="num">' + durShort(n.tst) + '</td>' +
+        '<td>' + n.waketime + '</td>' +
         '<td class="num"><span class="chip ' + eb + '"><i class="dot"></i>' + n.eff.toFixed(0) + '%</span></td>' +
         '<td class="num">' + clock(n.midClock) + '</td>' +
         '<td class="num">' + (n.rhr != null ? n.rhr : "—") + '</td>' +
