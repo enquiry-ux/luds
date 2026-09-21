@@ -217,6 +217,10 @@ p{margin:0}
 
 /* ---------- form ---------- */
 .form{padding:var(--s5);display:flex;flex-direction:column;gap:var(--s5)}
+.span-read{font-size:12.5px;color:var(--ink-2);font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.span-read.warn{color:var(--wake)}
+.span-read b{font-family:var(--f-ui);color:var(--ink)}
+.msg-fix{margin-left:8px}
 .field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:var(--s4) var(--s3);align-items:end}
 .field{display:flex;flex-direction:column;gap:5px;min-width:0}
 .field label,.field .lbl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -672,6 +676,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
           <input type="number" id="f-rhr" min="30" max="120" step="1" placeholder="&mdash;">
         </div>
       </div>
+      <p class="span-read" id="f-span"></p>
       <div class="field-grid">
         <div class="field">
           <span class="lbl" id="rest-lbl">How rested you felt</span>
@@ -3349,6 +3354,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
         $("f-wake").value = state.profile.waketime;
       }
     }
+    renderSpan();
   }
 
   $("br-go").addEventListener("click", function(){ askForBriefing(); });
@@ -3545,14 +3551,74 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
     syncFormToDate();
   });
 
+  // What the two time fields actually amount to, in the same terms the record is
+  // stored in. Shown as they are typed, so a slip is visible before it is a
+  // refusal: on a phone an 11:30 PM that lands as 11:30 AM looks identical in the
+  // field and only shows itself here, as nineteen and a half hours.
+  function spanOf(bed, wake){
+    if (!bed || !wake) return null;
+    var b = toWin(hm(bed)), w = toWin(hm(wake));
+    if (w <= b) w += 1440;
+    return w - b;
+  }
+  // The same night with the bedtime read twelve hours the other way. Where that
+  // lands somewhere sane, it is almost always what was meant.
+  function flipHalfDay(t){ return clock((hm(t) + 720) % 1440); }
+
+  function renderSpan(){
+    var el = $("f-span"), bed = $("f-bed").value, wake = $("f-wake").value;
+    var tib = spanOf(bed, wake);
+    if (tib == null) { el.textContent = ""; el.className = "span-read"; return; }
+    var odd = tib > 16 * 60 || tib < 30;
+    el.className = "span-read" + (odd ? " warn" : "");
+    el.innerHTML = "<b>" + escapeHtml(bed) + " \u2192 " + escapeHtml(wake) + "</b> \u00b7 " +
+      dur(tib) + " in bed" + (odd ? " \u2014 worth a look" : "");
+  }
+  ["f-bed", "f-wake"].forEach(function(id){
+    $(id).addEventListener("input", renderSpan);
+    $(id).addEventListener("change", renderSpan);
+  });
+
+  // An implausible span is worth querying, never worth refusing: shift work and
+  // illness are real, and it is the person who slept it who knows.
+  var spanOk = null;
+  function querySpan(bed, wake, tib){
+    // A twelve-hour slip can be in either field: too long usually means the
+    // bedtime was read as the morning, too short that the wake time was read as
+    // the evening. Offer whichever reading lands on a plausible night.
+    var onBed  = { field: "f-bed",  label: "Lights out", when: flipHalfDay(bed),  span: spanOf(flipHalfDay(bed), wake) };
+    var onWake = { field: "f-wake", label: "Woke",       when: flipHalfDay(wake), span: spanOf(bed, flipHalfDay(wake)) };
+    // Too long reads as a bedtime taken for the morning; too short as a wake
+    // time taken for the evening. Try the likelier field first.
+    var alt = (tib > 16 * 60 ? [onBed, onWake] : [onWake, onBed])
+      .filter(function(t){ return t.span != null && t.span >= 3 * 60 && t.span <= 14 * 60; })[0] || null;
+
+    var m = $("form-msg");
+    m.className = "form-msg err";
+    m.innerHTML = "That reads as " + dur(tib) + " in bed. " +
+      (alt ? '<button type="button" class="link-plain msg-fix" id="msg-alt" data-field="' + alt.field +
+             '" data-when="' + alt.when + '">' + alt.label + " " + escapeHtml(alt.when) +
+             " instead (" + dur(alt.span) + ')</button> ' : "") +
+      '<button type="button" class="link-plain msg-fix" id="msg-anyway">Save it anyway</button>';
+    spanOk = null;
+  }
+  $("form-msg").addEventListener("click", function(ev){
+    if (ev.target.id !== "msg-alt" && ev.target.id !== "msg-anyway") return;
+    if (ev.target.id === "msg-alt") { $(ev.target.dataset.field).value = ev.target.dataset.when; renderSpan(); }
+    else spanOk = $("f-bed").value + "|" + $("f-wake").value;
+    msg("");
+    $("form").dispatchEvent(new Event("submit", { cancelable: true }));
+  });
+
   $("form").addEventListener("submit", function(ev){
     ev.preventDefault();
     var date = $("f-date").value, bed = $("f-bed").value, wake = $("f-wake").value;
     if (!date || !bed || !wake) { msg("A date, a lights-out time and a wake time are needed.", true); return; }
 
     var probe = derive({ date: date, bedtime: bed, waketime: wake, latency: 0, awake: 0 });
-    if (probe.tib < 30) { msg("That is under half an hour in bed — check the times.", true); return; }
-    if (probe.tib > 16 * 60) { msg("That is over sixteen hours in bed — check the times.", true); return; }
+    var odd = probe.tib < 30 || probe.tib > 16 * 60;
+    if (odd && spanOk !== bed + "|" + wake) { querySpan(bed, wake, probe.tib); return; }
+    spanOk = null;
 
     var lat = clamp(parseInt($("f-lat").value, 10) || 0, 0, 300);
     var waso = clamp(parseInt($("f-waso").value, 10) || 0, 0, 400);
@@ -3570,6 +3636,7 @@ select:focus-visible{outline:2px solid var(--sleep);outline-offset:2px}
   });
 
   $("f-reset").addEventListener("click", function(){
+    spanOk = null;
     $("f-bed").value = "23:00"; $("f-wake").value = "07:00";
     $("f-lat").value = 15; $("f-waso").value = 0;
     $("f-rhr").value = ""; $("f-note").value = "";
