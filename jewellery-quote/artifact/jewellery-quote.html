@@ -1,0 +1,629 @@
+<title>Jewellery Quote</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,600&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow workbench column, sections stacked like a job bag; price summary docked at the bottom. */
+:root{
+  --ground:#eceeef; --surface:#fbfbfa; --inset:#f2f3f3;
+  --ink:#16191c; --ink-2:#4f565c; --muted:#80878d;
+  --rule:#d9dcde; --ring:rgba(22,25,28,.10);
+  --gold:#94701c; --gold-ink:#7a5a10; --gold-wash:#f4ecd8;
+  --lab:#3d6f8f; --natural:#8a5a2b;
+  --ok:#2c7a3f; --warn:#b07a00; --crit:#b3352b; --crit-wash:#fbe9e6;
+  --f-display:"Bodoni Moda", Didot, "Times New Roman", serif;
+  --f-ui:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-num:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  --shadow:0 1px 2px rgba(22,25,28,.05), 0 8px 20px -14px rgba(22,25,28,.25);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#101214; --surface:#181b1e; --inset:#1f2327;
+    --ink:#eef0f1; --ink-2:#aeb5ba; --muted:#848c92;
+    --rule:#2c3136; --ring:rgba(255,255,255,.09);
+    --gold:#d2a845; --gold-ink:#e0bb63; --gold-wash:#2c2614;
+    --lab:#7fb3d4; --natural:#d49a62;
+    --ok:#5cc177; --warn:#e3b341; --crit:#ef7a6f; --crit-wash:#3a1d1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 24px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#101214; --surface:#181b1e; --inset:#1f2327;
+  --ink:#eef0f1; --ink-2:#aeb5ba; --muted:#848c92;
+  --rule:#2c3136; --ring:rgba(255,255,255,.09);
+  --gold:#d2a845; --gold-ink:#e0bb63; --gold-wash:#2c2614;
+  --lab:#7fb3d4; --natural:#d49a62;
+  --ok:#5cc177; --warn:#e3b341; --crit:#ef7a6f; --crit-wash:#3a1d1a;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 24px -16px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--f-ui);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.wrap{max-width:560px;margin:0 auto;padding-inline:16px;padding-block:20px 150px;display:flex;flex-direction:column;gap:14px}
+h1,h2{margin:0;font-weight:600;text-wrap:balance}
+p{margin:0}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+header.top h1{font-family:var(--f-display);font-size:34px;line-height:1;letter-spacing:-.01em}
+header.top .eyebrow{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+
+.tabs{display:flex;gap:4px;padding:4px;background:var(--inset);border:1px solid var(--ring);border-radius:12px;position:sticky;top:env(safe-area-inset-top,0px);z-index:10}
+.tabs button{flex:1;font:inherit;font-size:15px;font-weight:600;color:var(--muted);background:none;border:0;border-radius:9px;padding:9px 0;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.card-head h2{font-size:17px}
+.sub{font-size:13px;color:var(--muted)}
+
+/* spot strip */
+.spot{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:baseline}
+.spot .big{font-family:var(--f-num);font-size:26px;font-weight:500;letter-spacing:-.01em}
+.spot .unit{font-size:13px;color:var(--muted)}
+.karats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.karat{background:var(--inset);border:1px solid var(--ring);border-radius:10px;padding:8px 10px}
+.karat .k{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.karat .v{font-family:var(--f-num);font-size:15px}
+.stamp{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--ring);background:var(--inset)}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.pill.stale i{background:var(--warn)} .pill.none i{background:var(--crit)}
+
+/* fields */
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label,.lbl{font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.input{display:flex;align-items:center;border:1px solid var(--rule);border-radius:10px;background:var(--inset);padding-inline:12px}
+.input:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-wash)}
+.input input{flex:1;min-width:0;border:0;background:transparent;font-family:var(--f-num);font-size:17px;color:var(--ink);padding:10px 0;outline:none}
+.input input.text{font-family:var(--f-ui)}
+.input .suf{font-size:13px;color:var(--muted);margin-left:6px;white-space:nowrap}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:15px;font-weight:500;padding:8px 14px;border-radius:999px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:600}
+:root[data-theme="dark"] .chip[aria-pressed="true"]{color:#1a1405}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .chip[aria-pressed="true"]{color:#1a1405}}
+
+.line{display:flex;justify-content:space-between;gap:12px;font-size:15px;color:var(--ink-2)}
+.line b{font-family:var(--f-num);font-weight:500;color:var(--ink);white-space:nowrap}
+.line.total{font-size:17px;color:var(--ink);font-weight:700}
+.line.total b{font-weight:600}
+hr{border:0;border-top:1px solid var(--rule);margin:2px 0}
+
+/* stones */
+.stone{border:1px solid var(--rule);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;border-left-width:4px}
+.stone.lab{border-left-color:var(--lab)} .stone.natural{border-left-color:var(--natural)} .stone.unset{border-left-color:var(--crit)}
+.stone-head{display:flex;justify-content:space-between;align-items:center}
+.stone-head b{font-size:15px}
+.ask{font-size:14.5px;font-weight:500}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--inset);border:1px solid var(--ring);border-radius:10px}
+.seg button{font:inherit;font-size:15px;font-weight:600;color:var(--ink-2);background:none;border:0;border-radius:7px;padding:9px 0;cursor:pointer}
+.seg button[aria-pressed="true"][data-v="lab"]{background:var(--lab);color:#fff}
+.seg button[aria-pressed="true"][data-v="natural"]{background:var(--natural);color:#fff}
+.seg button[aria-pressed="true"][data-v="natural"],.seg button[aria-pressed="true"][data-v="lab"]{text-shadow:0 1px 0 rgba(0,0,0,.15)}
+.rate{font-size:12.5px;color:var(--muted)}
+
+.btn{font:inherit;font-size:15px;font-weight:700;padding:12px 16px;border-radius:10px;border:1px solid transparent;cursor:pointer;background:var(--gold);color:#fff}
+.btn.soft{background:var(--gold-wash);color:var(--gold-ink)}
+.btn.ghost{background:transparent;border-color:var(--rule);color:var(--ink-2)}
+.btn.danger{background:var(--crit-wash);color:var(--crit)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.link{font:inherit;font-size:14px;font-weight:600;background:none;border:0;color:var(--gold-ink);cursor:pointer;padding:4px}
+.link.red{color:var(--crit)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.row-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.problem{font-size:14px;color:var(--crit);background:var(--crit-wash);border-radius:9px;padding:9px 11px}
+.note{font-size:13px;color:var(--ink-2);background:var(--inset);border:1px solid var(--ring);border-radius:9px;padding:9px 11px}
+.toast{font-size:13.5px;color:var(--ok);font-weight:600}
+
+/* docked summary */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--rule);box-shadow:0 -8px 24px -18px rgba(0,0,0,.35);padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.dock-in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:end}
+.dock .k{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.dock .cost{font-family:var(--f-num);font-size:17px}
+.dock .rrp{font-family:var(--f-display);font-size:34px;font-weight:600;line-height:1;text-align:right;letter-spacing:-.01em;font-variant-numeric:lining-nums tabular-nums}
+.dock .right{text-align:right}
+.dock .margin{font-size:12px;color:var(--muted)}
+
+/* saved */
+.q{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:12px 0;border-bottom:1px solid var(--rule)}
+.q:last-child{border-bottom:0}
+.q .t{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.q .m{font-size:13px;color:var(--muted);grid-column:1}
+.q .p{font-family:var(--f-num);text-align:right}
+.q .acts{grid-column:1/-1;display:flex;gap:8px;margin-top:4px}
+.empty{font-size:14px;color:var(--muted);padding:6px 0}
+
+.panel{display:flex;flex-direction:column;gap:14px}
+.confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px}
+@media (max-width:380px){.karats{grid-template-columns:1fr 1fr}.pair{grid-template-columns:1fr}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Workshop pricing</div>
+      <h1>Jewellery Quote</h1>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-quote" aria-selected="true" data-tab="quote">Quote</button>
+    <button role="tab" id="tab-saved" aria-selected="false" data-tab="saved">Saved</button>
+    <button role="tab" id="tab-settings" aria-selected="false" data-tab="settings">Settings</button>
+  </nav>
+
+  <!-- ============ QUOTE ============ -->
+  <section id="panel-quote" class="panel">
+    <div class="card" aria-labelledby="spot-h">
+      <div class="card-head"><h2 id="spot-h">Gold today</h2><span class="sub">AUD</span></div>
+      <div class="spot">
+        <div><span class="big" id="spot-oz">—</span> <span class="unit">per oz, 24ct</span></div>
+      </div>
+      <div class="karats">
+        <div class="karat"><div class="k">24ct / g</div><div class="v" id="g24">—</div></div>
+        <div class="karat"><div class="k">18ct / g</div><div class="v" id="g18">—</div></div>
+        <div class="karat"><div class="k">9ct / g</div><div class="v" id="g9">—</div></div>
+      </div>
+      <div class="stamp"><span class="pill" id="spot-pill"><i></i><span id="spot-age">No price yet</span></span><span id="spot-src"></span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Piece</h2></div>
+      <div class="field"><label for="q-customer">Customer</label><div class="input"><input id="q-customer" class="text" placeholder="Optional" autocomplete="off"></div></div>
+      <div class="field"><label for="q-desc">Description</label><div class="input"><input id="q-desc" class="text" placeholder="e.g. 18ct halo ring" autocomplete="off"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Metal</h2></div>
+      <div class="chips" id="metal-chips"></div>
+      <div class="field"><label for="q-grams">Finished weight</label><div class="input"><input id="q-grams" inputmode="decimal" placeholder="0"><span class="suf">g</span></div></div>
+      <div class="line"><span id="metal-label">Metal cost</span><b id="metal-cost">$0.00</b></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Diamonds</h2><span class="sub" id="stone-count"></span></div>
+      <div id="stones" style="display:flex;flex-direction:column;gap:10px"></div>
+      <button type="button" class="btn soft" id="add-stone">+ Add diamond</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Labour & extras</h2></div>
+      <div class="field"><label for="q-labour">Labour / manufacturing</label><div class="input"><input id="q-labour" inputmode="decimal" placeholder="0"><span class="suf">AUD</span></div></div>
+      <div class="field"><label for="q-other">Other costs (findings, engraving, freight)</label><div class="input"><input id="q-other" inputmode="decimal" placeholder="0"><span class="suf">AUD</span></div></div>
+      <div class="line"><span id="setting-label">Setting</span><b id="setting-cost">$0.00</b></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Quote</h2></div>
+      <div id="problems" style="display:flex;flex-direction:column;gap:6px"></div>
+      <div class="line"><span>Metal</span><b id="s-metal">$0.00</b></div>
+      <div class="line" id="s-nat-row"><span>Natural diamonds</span><b id="s-nat">$0.00</b></div>
+      <div class="line" id="s-lab-row"><span>Lab-grown diamonds</span><b id="s-lab">$0.00</b></div>
+      <div class="line"><span>Setting, labour & extras</span><b id="s-work">$0.00</b></div>
+      <hr>
+      <div class="line total"><span>Cost price</span><b id="s-cost">$0.00</b></div>
+      <hr>
+      <div class="line"><span>Retail ex GST</span><b id="s-ex">$0.00</b></div>
+      <div class="line"><span id="s-gst-label">GST</span><b id="s-gst">$0.00</b></div>
+      <div class="line total"><span>Recommended retail</span><b id="s-rrp">$0.00</b></div>
+      <div class="row-btns">
+        <button type="button" class="btn" id="save-quote">Save quote</button>
+        <button type="button" class="btn ghost" id="copy-quote">Copy text</button>
+      </div>
+      <button type="button" class="link" id="new-quote" style="align-self:center">Start a new quote</button>
+      <span class="toast" id="quote-msg" role="status"></span>
+    </div>
+  </section>
+
+  <!-- ============ SAVED ============ -->
+  <section id="panel-saved" class="panel" hidden>
+    <div class="card">
+      <div class="card-head"><h2>Saved quotes</h2><span class="sub" id="saved-count"></span></div>
+      <div id="saved-list"><p class="empty">Saved quotes from the whole team show here. Build a quote and tap Save quote.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="panel-settings" class="panel" hidden>
+    <p class="note" id="shared-note">Settings are shared with everyone on the team who uses this page.</p>
+
+    <div class="card">
+      <div class="card-head"><h2>Today's spot price</h2></div>
+      <p class="sub">Claude updates this every morning. If it looks wrong, enter the price per troy ounce in AUD (for example from the Perth Mint).</p>
+      <div class="field"><label for="m-xau">Gold per oz</label><div class="input"><input id="m-xau" inputmode="decimal"><span class="suf">AUD</span></div></div>
+      <div class="pair">
+        <div class="field"><label for="m-xpt">Platinum per oz</label><div class="input"><input id="m-xpt" inputmode="decimal"><span class="suf">AUD</span></div></div>
+        <div class="field"><label for="m-xag">Silver per oz</label><div class="input"><input id="m-xag" inputmode="decimal"><span class="suf">AUD</span></div></div>
+      </div>
+      <button type="button" class="btn" id="save-spot">Use these prices</button>
+      <span class="toast" id="spot-msg" role="status"></span>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Lab-grown diamonds</h2></div>
+      <div class="pair">
+        <div class="field"><label for="d-labPrice">Price per carat</label><div class="input"><input id="d-labPrice" inputmode="decimal" data-set="labPrice"><span class="suf">AUD</span></div></div>
+        <div class="field"><label for="d-labMax">Up to size</label><div class="input"><input id="d-labMax" inputmode="decimal" data-set="labMax"><span class="suf">ct</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Natural diamonds</h2></div>
+      <p class="sub">The price per carat rises evenly from the smallest size to the largest.</p>
+      <div class="pair">
+        <div class="field"><label for="d-natMinCt">Smallest size</label><div class="input"><input id="d-natMinCt" inputmode="decimal" data-set="natMinCt"><span class="suf">ct</span></div></div>
+        <div class="field"><label for="d-natMinPrice">Price per carat</label><div class="input"><input id="d-natMinPrice" inputmode="decimal" data-set="natMinPrice"><span class="suf">AUD</span></div></div>
+      </div>
+      <div class="pair">
+        <div class="field"><label for="d-natMaxCt">Largest size</label><div class="input"><input id="d-natMaxCt" inputmode="decimal" data-set="natMaxCt"><span class="suf">ct</span></div></div>
+        <div class="field"><label for="d-natMaxPrice">Price per carat</label><div class="input"><input id="d-natMaxPrice" inputmode="decimal" data-set="natMaxPrice"><span class="suf">AUD</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Costs</h2></div>
+      <div class="pair">
+        <div class="field"><label for="d-loss">Metal loss</label><div class="input"><input id="d-loss" inputmode="decimal" data-set="lossPct"><span class="suf">%</span></div></div>
+        <div class="field"><label for="d-setting">Setting per stone</label><div class="input"><input id="d-setting" inputmode="decimal" data-set="settingPerStone"><span class="suf">AUD</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Markups</h2></div>
+      <p class="sub">Retail = cost × markup, then GST is added and the total rounded up.</p>
+      <div class="field"><label for="d-mkMetal">Metal, setting & labour</label><div class="input"><input id="d-mkMetal" inputmode="decimal" data-set="mkMetal"><span class="suf">×</span></div></div>
+      <div class="pair">
+        <div class="field"><label for="d-mkNat">Natural diamonds</label><div class="input"><input id="d-mkNat" inputmode="decimal" data-set="mkNat"><span class="suf">×</span></div></div>
+        <div class="field"><label for="d-mkLab">Lab diamonds</label><div class="input"><input id="d-mkLab" inputmode="decimal" data-set="mkLab"><span class="suf">×</span></div></div>
+      </div>
+      <div class="pair">
+        <div class="field"><label for="d-gst">GST</label><div class="input"><input id="d-gst" inputmode="decimal" data-set="gstPct"><span class="suf">%</span></div></div>
+        <div class="field"><label for="d-round">Round up to nearest</label><div class="input"><input id="d-round" inputmode="decimal" data-set="roundTo"><span class="suf">AUD</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="toast" id="settings-msg" role="status"></span>
+      <div class="confirm" id="reset-wrap">
+        <button type="button" class="btn danger" id="reset-settings">Reset settings to defaults</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="dock" aria-live="polite">
+  <div class="dock-in">
+    <div><div class="k">Cost price</div><div class="cost" id="d-cost">$0.00</div></div>
+    <div class="right"><div class="k">Retail inc GST</div><div class="rrp" id="d-rrp">$0</div><div class="margin" id="d-margin"></div></div>
+  </div>
+</div>
+
+<script>
+(() => {
+const OZ = 31.1034768;
+const METALS = [
+  { id: '9k', label: '9ct gold', sym: 'XAU', purity: 0.375 },
+  { id: '18k', label: '18ct gold', sym: 'XAU', purity: 0.75 },
+  { id: 'pt950', label: 'Platinum 950', sym: 'XPT', purity: 0.95 },
+  { id: 'ag925', label: 'Silver 925', sym: 'XAG', purity: 0.925 },
+];
+const DEFAULTS = {
+  labPrice: 250, labMax: 0.3,
+  natMinCt: 0.01, natMinPrice: 1200, natMaxCt: 0.1, natMaxPrice: 1700,
+  lossPct: 8, settingPerStone: 15,
+  mkMetal: 2.2, mkNat: 1.8, mkLab: 2.5, gstPct: 10, roundTo: 10,
+};
+
+let settings = { ...DEFAULTS };
+let spot = null; // {XAU, XPT, XAG (AUD/oz), updatedAt, source}
+let db = null;
+let saved = [];
+let nextKey = 1;
+const blankQuote = () => ({ customer: '', desc: '', metalId: '18k', grams: 0, labour: 0, other: 0, stones: [] });
+let q = blankQuote();
+
+const $ = (id) => document.getElementById(id);
+const num = (s) => { const n = parseFloat(String(s).replace(/[^0-9.]/g, '')); return Number.isFinite(n) ? n : 0; };
+const fmt = (v, dp = 2) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', minimumFractionDigits: dp, maximumFractionDigits: dp }).format(v || 0);
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+
+/* ---------- pricing ---------- */
+function stonePricePerCt(s) {
+  if (s.override > 0) return s.override;
+  if (s.origin === 'lab') return settings.labPrice;
+  if (s.origin === 'natural') {
+    const span = settings.natMaxCt - settings.natMinCt;
+    if (span <= 0) return settings.natMaxPrice;
+    const t = Math.min(1, Math.max(0, (s.ct - settings.natMinCt) / span));
+    return settings.natMinPrice + t * (settings.natMaxPrice - settings.natMinPrice);
+  }
+  return 0;
+}
+function calc() {
+  const problems = [];
+  const metal = METALS.find((m) => m.id === q.metalId) || METALS[1];
+  const perOz = spot && spot[metal.sym];
+  const perGramPure = perOz ? perOz / OZ : null;
+  if (!perGramPure && q.grams > 0) problems.push(`No ${metal.sym === 'XAU' ? 'gold' : metal.label} price yet. Enter today's price in Settings.`);
+  const metalCost = (perGramPure || 0) * metal.purity * q.grams * (1 + settings.lossPct / 100);
+  let nat = 0, lab = 0, count = 0;
+  const lines = q.stones.map((s, i) => {
+    const rate = stonePricePerCt(s);
+    const cost = rate * s.ct * s.qty;
+    if (s.qty > 0) count += s.qty;
+    if (!s.origin) problems.push(`Diamond ${i + 1}: choose lab-grown or natural.`);
+    else {
+      const max = s.origin === 'lab' ? settings.labMax : settings.natMaxCt;
+      if (!(s.override > 0) && s.ct > max) problems.push(`Diamond ${i + 1}: over ${max}ct is outside small-stone pricing. Type a price per carat for it.`);
+      if (s.ct <= 0) problems.push(`Diamond ${i + 1}: enter the carat size.`);
+      if (s.origin === 'lab') lab += cost; else nat += cost;
+    }
+    return { rate, cost };
+  });
+  const setting = count * settings.settingPerStone;
+  const work = setting + q.labour + q.other;
+  const metalWork = metalCost + work;
+  const cost = metalWork + nat + lab;
+  const ex = metalWork * settings.mkMetal + nat * settings.mkNat + lab * settings.mkLab;
+  const gst = ex * settings.gstPct / 100;
+  const inc = ex + gst;
+  const step = settings.roundTo;
+  const rrp = step > 0 ? Math.ceil(inc / step - 1e-9) * step : Math.round(inc * 100) / 100;
+  const rrpEx = rrp / (1 + settings.gstPct / 100);
+  const margin = rrpEx > 0 ? (rrpEx - cost) / rrpEx * 100 : 0;
+  return { metal, perGramPure, metalCost, lines, nat, lab, setting, work, cost, ex, gst, rrp, margin, problems, count };
+}
+
+/* ---------- render ---------- */
+function renderSpot() {
+  const x = spot && spot.XAU;
+  $('spot-oz').textContent = x ? fmt(x) : '—';
+  $('g24').textContent = x ? fmt(x / OZ * 0.999) : '—';
+  $('g18').textContent = x ? fmt(x / OZ * 0.75) : '—';
+  $('g9').textContent = x ? fmt(x / OZ * 0.375) : '—';
+  const pill = $('spot-pill');
+  pill.classList.remove('stale', 'none');
+  if (!x || !spot.updatedAt) { pill.classList.add('none'); $('spot-age').textContent = 'No price yet'; $('spot-src').textContent = 'Enter it in Settings.'; return; }
+  const d = new Date(spot.updatedAt);
+  const today = new Date().toDateString() === d.toDateString();
+  const ageDays = (Date.now() - d.getTime()) / 864e5;
+  if (!today && ageDays > 1.5) pill.classList.add('stale');
+  $('spot-age').textContent = today ? 'Updated today' : `Updated ${d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}`;
+  $('spot-src').textContent = `${d.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })} · ${spot.source || 'manual'}`;
+  ['XAU', 'XPT', 'XAG'].forEach((k) => { const el = $('m-' + k.toLowerCase()); if (document.activeElement !== el) el.placeholder = spot[k] ? spot[k].toFixed(2) : ''; });
+}
+
+function renderMetalChips() {
+  $('metal-chips').innerHTML = '';
+  METALS.forEach((m) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = m.label;
+    b.setAttribute('aria-pressed', String(m.id === q.metalId));
+    b.onclick = () => { q.metalId = m.id; renderMetalChips(); update(); };
+    $('metal-chips').appendChild(b);
+  });
+}
+
+function renderStones() {
+  const box = $('stones');
+  box.innerHTML = '';
+  q.stones.forEach((s, i) => {
+    const el = document.createElement('div');
+    el.className = 'stone ' + (s.origin || 'unset');
+    el.innerHTML = `
+      <div class="stone-head"><b>Diamond ${i + 1}</b><button type="button" class="link red" data-act="remove">Remove</button></div>
+      <div class="ask">Is this diamond lab-grown or natural?</div>
+      <div class="seg" role="group" aria-label="Diamond ${i + 1} type">
+        <button type="button" data-v="lab" aria-pressed="${s.origin === 'lab'}">Lab-grown</button>
+        <button type="button" data-v="natural" aria-pressed="${s.origin === 'natural'}">Natural</button>
+      </div>
+      <div class="pair">
+        <div class="field"><label for="ct-${s.key}">Size each</label><div class="input"><input id="ct-${s.key}" inputmode="decimal" placeholder="0.00" data-f="ct" value="${s.ct || ''}"><span class="suf">ct</span></div></div>
+        <div class="field"><label for="qty-${s.key}">Quantity</label><div class="input"><input id="qty-${s.key}" inputmode="numeric" placeholder="1" data-f="qty" value="${s.qty || ''}"></div></div>
+      </div>
+      <div class="field"><label for="ov-${s.key}">Own price per carat <span class="rate">(leave blank for standard)</span></label><div class="input"><input id="ov-${s.key}" inputmode="decimal" placeholder="Standard" data-f="override" value="${s.override || ''}"><span class="suf">AUD</span></div></div>
+      <div class="line"><span class="rate" data-out="rate"></span><b data-out="cost"></b></div>`;
+    el.querySelector('[data-act="remove"]').onclick = () => { q.stones.splice(i, 1); renderStones(); update(); };
+    el.querySelectorAll('.seg button').forEach((b) => b.onclick = () => { s.origin = b.dataset.v; renderStones(); update(); });
+    el.querySelectorAll('input[data-f]').forEach((inp) => inp.oninput = () => {
+      const v = num(inp.value);
+      s[inp.dataset.f] = inp.dataset.f === 'qty' ? Math.round(v) : v;
+      update();
+    });
+    box.appendChild(el);
+  });
+  $('stone-count').textContent = q.stones.length ? `${q.stones.reduce((a, s) => a + (s.qty || 0), 0)} stones` : 'None';
+}
+
+function update() {
+  const r = calc();
+  $('metal-label').textContent = `Metal cost (incl. ${settings.lossPct}% loss)`;
+  $('metal-cost').textContent = fmt(r.metalCost);
+  document.querySelectorAll('#stones .stone').forEach((el, i) => {
+    const s = q.stones[i], l = r.lines[i];
+    el.querySelector('[data-out="rate"]').textContent = s.origin ? `${fmt(l.rate)}/ct × ${(s.ct * s.qty).toFixed(3)}ct` : 'Choose lab-grown or natural';
+    el.querySelector('[data-out="cost"]').textContent = fmt(l.cost);
+  });
+  $('setting-label').textContent = `Setting (${r.count} × ${fmt(settings.settingPerStone)})`;
+  $('setting-cost').textContent = fmt(r.setting);
+  $('s-metal').textContent = fmt(r.metalCost);
+  $('s-nat').textContent = fmt(r.nat); $('s-nat-row').hidden = !r.nat;
+  $('s-lab').textContent = fmt(r.lab); $('s-lab-row').hidden = !r.lab;
+  $('s-work').textContent = fmt(r.work);
+  $('s-cost').textContent = fmt(r.cost);
+  $('s-ex').textContent = fmt(r.ex);
+  $('s-gst-label').textContent = `GST ${settings.gstPct}%`;
+  $('s-gst').textContent = fmt(r.gst);
+  $('s-rrp').textContent = fmt(r.rrp);
+  $('d-cost').textContent = fmt(r.cost);
+  $('d-rrp').textContent = fmt(r.rrp, 0);
+  $('d-margin').textContent = r.cost > 0 ? `Margin ${r.margin.toFixed(0)}% of ex-GST price` : '';
+  $('problems').innerHTML = '';
+  r.problems.forEach((p) => { const d = document.createElement('div'); d.className = 'problem'; d.textContent = p; $('problems').appendChild(d); });
+  const empty = r.cost <= 0;
+  $('save-quote').disabled = !!r.problems.length || empty;
+  $('copy-quote').disabled = !!r.problems.length || empty;
+  store.set('jq-draft', q);
+}
+
+function quoteText(r) {
+  const lines = [
+    `Quote${q.desc ? ' – ' + q.desc : ''}`,
+    q.customer ? `For: ${q.customer}` : null,
+    `Date: ${new Date().toLocaleDateString('en-AU')}`,
+    '',
+    `${r.metal.label}, ${q.grams} g`,
+    ...q.stones.map((s, i) => `Diamond ${i + 1}: ${s.qty} × ${s.ct}ct ${s.origin === 'lab' ? 'lab-grown' : 'natural'}`),
+    '',
+    `Price: ${fmt(r.rrp)} inc. GST`,
+  ];
+  return lines.filter((l) => l !== null).join('\n');
+}
+
+/* ---------- saved quotes ---------- */
+function renderSaved() {
+  const list = $('saved-list');
+  $('saved-count').textContent = saved.length ? `${saved.length} saved` : '';
+  if (!db) { list.innerHTML = '<p class="empty">Saved quotes need the shared team storage, which isn\'t available in this view.</p>'; return; }
+  if (!saved.length) { list.innerHTML = '<p class="empty">Saved quotes from the whole team show here. Build a quote and tap Save quote.</p>'; return; }
+  list.innerHTML = '';
+  saved.forEach((d) => {
+    const v = d.data();
+    const el = document.createElement('div');
+    el.className = 'q';
+    const when = new Date(v.savedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+    el.innerHTML = `<div class="t"></div><div class="p">${fmt(v.rrp, 0)}</div><div class="m"></div><div class="m num" style="grid-column:2;text-align:right">cost ${fmt(v.cost, 0)}</div>
+      <div class="acts"><button type="button" class="link" data-a="open">Open</button><button type="button" class="link red" data-a="del">Delete</button></div>`;
+    el.querySelector('.t').textContent = v.input.desc || 'Untitled piece';
+    el.querySelector('.m').textContent = `${v.input.customer ? v.input.customer + ' · ' : ''}${when} · gold ${fmt(v.spotXAU, 0)}/oz`;
+    el.querySelector('[data-a="open"]').onclick = () => {
+      q = JSON.parse(JSON.stringify(v.input));
+      q.stones.forEach((s) => { s.key = nextKey++; });
+      fillQuoteInputs(); renderMetalChips(); renderStones(); update(); showTab('quote');
+      say('quote-msg', 'Opened. Prices use today\'s spot and current settings.');
+    };
+    const del = el.querySelector('[data-a="del"]');
+    del.onclick = () => {
+      if (del.dataset.armed) { db.collection('quotes').doc(d.id).delete().catch(() => {}); return; }
+      del.dataset.armed = '1'; del.textContent = 'Tap again to delete';
+      setTimeout(() => { del.dataset.armed = ''; del.textContent = 'Delete'; }, 3000);
+    };
+    list.appendChild(el);
+  });
+}
+
+/* ---------- settings ---------- */
+function fillSettingsInputs() {
+  document.querySelectorAll('input[data-set]').forEach((inp) => {
+    if (document.activeElement !== inp) inp.value = settings[inp.dataset.set];
+  });
+}
+let saveTimer = null;
+function saveSettingsSoon() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    store.set('jq-settings', settings);
+    if (!db) return;
+    try { await db.doc('config/settings').set({ ...settings, updatedAt: new Date().toISOString() }); say('settings-msg', 'Saved for the whole team.'); }
+    catch { say('settings-msg', 'Could not save to the team. Your change applies on this device only.'); }
+  }, 600);
+}
+
+function fillQuoteInputs() {
+  $('q-customer').value = q.customer || '';
+  $('q-desc').value = q.desc || '';
+  $('q-grams').value = q.grams || '';
+  $('q-labour').value = q.labour || '';
+  $('q-other').value = q.other || '';
+}
+
+function say(id, text) {
+  const el = $(id); el.textContent = text;
+  clearTimeout(el._t); el._t = setTimeout(() => { el.textContent = ''; }, 4000);
+}
+
+function showTab(t) {
+  ['quote', 'saved', 'settings'].forEach((k) => {
+    $('tab-' + k).setAttribute('aria-selected', String(k === t));
+    $('panel-' + k).hidden = k !== t;
+  });
+  document.querySelector('.dock').hidden = t !== 'quote';
+  store.set('jq-tab', t);
+}
+
+/* ---------- wire up ---------- */
+document.querySelectorAll('.tabs button').forEach((b) => b.onclick = () => showTab(b.dataset.tab));
+[['q-customer', 'customer', false], ['q-desc', 'desc', false], ['q-grams', 'grams', true], ['q-labour', 'labour', true], ['q-other', 'other', true]]
+  .forEach(([id, key, isNum]) => $(id).oninput = (e) => { q[key] = isNum ? num(e.target.value) : e.target.value; update(); });
+$('add-stone').onclick = () => { q.stones.push({ key: nextKey++, origin: null, ct: 0, qty: 1, override: 0 }); renderStones(); update(); };
+$('new-quote').onclick = () => { q = blankQuote(); fillQuoteInputs(); renderMetalChips(); renderStones(); update(); window.scrollTo({ top: 0 }); };
+$('copy-quote').onclick = () => {
+  const text = quoteText(calc());
+  const done = () => say('quote-msg', 'Quote copied. Paste it into a text or email.');
+  try { navigator.clipboard.writeText(text).then(done, () => say('quote-msg', text)); } catch { say('quote-msg', text); }
+};
+$('save-quote').onclick = async () => {
+  if (!db) { say('quote-msg', 'Team storage is not available here, so the quote was not saved.'); return; }
+  const r = calc();
+  const input = JSON.parse(JSON.stringify(q));
+  input.stones.forEach((s) => delete s.key);
+  try {
+    await db.collection('quotes').add({ input, cost: r.cost, rrp: r.rrp, spotXAU: spot ? spot.XAU : null, settings, savedAt: new Date().toISOString() });
+    say('quote-msg', 'Saved to the team\'s quotes.');
+  } catch { say('quote-msg', 'Could not save the quote. Try again in a moment.'); }
+};
+document.querySelectorAll('input[data-set]').forEach((inp) => inp.oninput = () => {
+  settings[inp.dataset.set] = num(inp.value); update(); saveSettingsSoon();
+});
+$('reset-settings').onclick = () => {
+  const b = $('reset-settings');
+  if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Tap again to reset for everyone'; setTimeout(() => { b.dataset.armed = ''; b.textContent = 'Reset settings to defaults'; }, 3500); return; }
+  b.dataset.armed = ''; b.textContent = 'Reset settings to defaults';
+  settings = { ...DEFAULTS }; fillSettingsInputs(); update(); saveSettingsSoon();
+};
+$('save-spot').onclick = async () => {
+  const next = { ...(spot || {}) };
+  [['XAU', 'm-xau'], ['XPT', 'm-xpt'], ['XAG', 'm-xag']].forEach(([k, id]) => { const v = num($(id).value); if (v > 0) next[k] = v; });
+  if (!next.XAU) { say('spot-msg', 'Enter the gold price per ounce first.'); return; }
+  next.updatedAt = new Date().toISOString(); next.source = 'entered manually';
+  spot = next; store.set('jq-spot', spot);
+  ['m-xau', 'm-xpt', 'm-xag'].forEach((id) => { $(id).value = ''; });
+  renderSpot(); update();
+  if (db) { try { await db.doc('prices/spot').set(next); say('spot-msg', 'Saved. Everyone now uses these prices.'); } catch { say('spot-msg', 'Saved on this device only.'); } }
+  else say('spot-msg', 'Saved on this device.');
+};
+
+/* ---------- boot ---------- */
+settings = { ...DEFAULTS, ...(store.get('jq-settings') || {}) };
+spot = store.get('jq-spot');
+const draft = store.get('jq-draft');
+if (draft && draft.stones) { q = { ...blankQuote(), ...draft }; q.stones.forEach((s) => { s.key = nextKey++; }); }
+fillQuoteInputs(); fillSettingsInputs(); renderMetalChips(); renderStones(); renderSpot(); update(); renderSaved();
+showTab(store.get('jq-tab') || 'quote');
+
+(async () => {
+  try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch { db = null; }
+  if (!db) { $('shared-note').textContent = 'Team storage isn\'t available in this view, so settings apply on this device only.'; renderSaved(); return; }
+  db.doc('prices/spot').onSnapshot((snap) => {
+    if (!snap.exists) return;
+    spot = { ...snap.data() }; store.set('jq-spot', spot); renderSpot(); update();
+  });
+  db.doc('config/settings').onSnapshot((snap) => {
+    if (!snap.exists) return;
+    const { updatedAt, ...rest } = snap.data();
+    settings = { ...DEFAULTS, ...rest }; store.set('jq-settings', settings); fillSettingsInputs(); update();
+  });
+  db.collection('quotes').orderBy('savedAt', 'desc').limit(100).onSnapshot((snap) => { saved = snap.docs; renderSaved(); }, () => {});
+  renderSaved();
+})();
+})();
+</script>
