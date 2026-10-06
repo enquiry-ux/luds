@@ -62,11 +62,11 @@ export async function loadSettings(): Promise<Settings> {
   try {
     const raw = await AsyncStorage.getItem(SETTINGS_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    const saved = JSON.parse(raw) as Partial<Settings>;
+    const { priceTable: _old, ...saved } = JSON.parse(raw) as Partial<Settings> & { priceTable?: unknown };
     return {
       ...DEFAULT_SETTINGS,
       ...saved,
-      priceTable: { ...DEFAULT_SETTINGS.priceTable, ...saved.priceTable },
+      diamonds: { ...DEFAULT_SETTINGS.diamonds, ...saved.diamonds },
     };
   } catch {
     return DEFAULT_SETTINGS;

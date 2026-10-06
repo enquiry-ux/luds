@@ -26,28 +26,20 @@ export type Stone = {
   origin: DiamondOrigin | null; // null until the user has answered lab or natural
   caratEach: number;
   quantity: number;
-  pricePerCaratOverride: number | null; // null = use the price table in settings
+  pricePerCaratOverride: number | null; // null = use the standard pricing in settings
 };
 
-// Price-per-carat table, keyed by the lower bound of each size band (carats).
-export const SIZE_BANDS = [0, 0.1, 0.3, 0.5, 1, 1.5, 2, 3] as const;
-
-export type PriceTable = Record<DiamondOrigin, number[]>; // one entry per SIZE_BANDS
-
-export function bandLabel(index: number): string {
-  const lo = SIZE_BANDS[index];
-  const hi = SIZE_BANDS[index + 1];
-  if (hi === undefined) return `${lo.toFixed(2)}ct +`;
-  return `${lo.toFixed(2)}–${(hi - 0.01).toFixed(2)}ct`;
-}
-
-export function bandIndexFor(caratEach: number): number {
-  let idx = 0;
-  SIZE_BANDS.forEach((lo, i) => {
-    if (caratEach >= lo) idx = i;
-  });
-  return idx;
-}
+// Small stones only. Lab-grown is a flat price per carat up to a maximum size.
+// Natural is priced on a straight line between the smallest and largest size,
+// e.g. 0.01ct = $1,200/ct rising evenly to 0.10ct = $1,700/ct.
+export type DiamondPricing = {
+  labPricePerCarat: number;
+  labMaxCarat: number;
+  naturalMinCarat: number;
+  naturalMinPrice: number; // per carat at naturalMinCarat
+  naturalMaxCarat: number;
+  naturalMaxPrice: number; // per carat at naturalMaxCarat
+};
 
 export type Settings = {
   currency: string;
@@ -58,11 +50,9 @@ export type Settings = {
   markupLab: number;
   gstPercent: number;
   roundTo: number; // round the retail price up to the nearest N
-  priceTable: PriceTable;
+  diamonds: DiamondPricing;
 };
 
-// Starting values only. Diamond prices swing widely with colour, clarity and cut,
-// so the team should replace these with their own supplier prices in Settings.
 export const DEFAULT_SETTINGS: Settings = {
   currency: 'AUD',
   metalLossPercent: 8,
@@ -72,9 +62,13 @@ export const DEFAULT_SETTINGS: Settings = {
   markupLab: 2.5,
   gstPercent: 10,
   roundTo: 10,
-  priceTable: {
-    natural: [900, 1600, 2800, 4200, 9000, 13000, 18000, 26000],
-    lab: [250, 350, 450, 550, 700, 800, 900, 1000],
+  diamonds: {
+    labPricePerCarat: 250,
+    labMaxCarat: 0.3,
+    naturalMinCarat: 0.01,
+    naturalMinPrice: 1200,
+    naturalMaxCarat: 0.1,
+    naturalMaxPrice: 1700,
   },
 };
 
@@ -115,10 +109,18 @@ export type QuoteResult = {
   problems: string[];
 };
 
-export function pricePerCaratFor(stone: Stone, table: PriceTable): number {
+export function maxCaratFor(origin: DiamondOrigin, d: DiamondPricing): number {
+  return origin === 'lab' ? d.labMaxCarat : d.naturalMaxCarat;
+}
+
+export function pricePerCaratFor(stone: Stone, d: DiamondPricing): number {
   if (stone.pricePerCaratOverride != null) return stone.pricePerCaratOverride;
   if (!stone.origin) return 0;
-  return table[stone.origin][bandIndexFor(stone.caratEach)] ?? 0;
+  if (stone.origin === 'lab') return d.labPricePerCarat;
+  const span = d.naturalMaxCarat - d.naturalMinCarat;
+  if (span <= 0) return d.naturalMaxPrice;
+  const t = Math.min(1, Math.max(0, (stone.caratEach - d.naturalMinCarat) / span));
+  return d.naturalMinPrice + t * (d.naturalMaxPrice - d.naturalMinPrice);
 }
 
 export function roundUp(value: number, step: number): number {
@@ -139,12 +141,16 @@ export function calculateQuote(input: QuoteInput, spot: SpotPrices, settings: Se
     (pricePerGramPure ?? 0) * metal.purity * input.metalGrams * (1 + settings.metalLossPercent / 100);
 
   const stoneLines: StoneLine[] = input.stones.map((stone) => {
-    const pricePerCarat = pricePerCaratFor(stone, settings.priceTable);
+    const pricePerCarat = pricePerCaratFor(stone, settings.diamonds);
     const totalCarat = stone.caratEach * stone.quantity;
     return { stone, pricePerCarat, totalCarat, cost: pricePerCarat * totalCarat };
   });
   input.stones.forEach((s, i) => {
     if (!s.origin && s.quantity > 0) problems.push(`Diamond ${i + 1}: choose Lab or Natural.`);
+    if (s.origin && s.pricePerCaratOverride == null && s.caratEach > maxCaratFor(s.origin, settings.diamonds)) {
+      const max = maxCaratFor(s.origin, settings.diamonds);
+      problems.push(`Diamond ${i + 1}: over ${max}ct is outside the small-stone pricing. Enter a price per carat for it.`);
+    }
   });
 
   const naturalCost = sum(stoneLines.filter((l) => l.stone.origin === 'natural').map((l) => l.cost));

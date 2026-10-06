@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
-import { bandLabel, DEFAULT_SETTINGS, DiamondOrigin, MetalSymbol, Settings, SIZE_BANDS } from './pricing';
+import { DEFAULT_SETTINGS, DiamondPricing, MetalSymbol, Settings } from './pricing';
 import { SpotSnapshot } from './spot';
-import { Button, Card, colors, NumberField, Segmented, TextField } from './ui';
+import { Button, Card, colors, NumberField, TextField } from './ui';
 
 type Props = {
   settings: Settings;
@@ -15,16 +15,12 @@ type Props = {
 const METAL_NAMES: Record<MetalSymbol, string> = { XAU: 'Gold', XPT: 'Platinum', XAG: 'Silver' };
 
 export function SettingsScreen({ settings, onChange, spot, onManualSpot }: Props) {
-  const [origin, setOrigin] = useState<DiamondOrigin>('natural');
   const [manual, setManual] = useState<Partial<Record<MetalSymbol, number>>>({});
   const set = (patch: Partial<Settings>) => onChange({ ...settings, ...patch });
   const cur = settings.currency;
 
-  const setBand = (index: number, value: number) => {
-    const row = [...settings.priceTable[origin]];
-    row[index] = value;
-    set({ priceTable: { ...settings.priceTable, [origin]: row } });
-  };
+  const setDiamonds = (patch: Partial<DiamondPricing>) => set({ diamonds: { ...settings.diamonds, ...patch } });
+  const d = settings.diamonds;
 
   const saveManual = () => {
     const prices = { ...(spot?.currency === cur ? spot.prices : {}) };
@@ -60,27 +56,29 @@ export function SettingsScreen({ settings, onChange, spot, onManualSpot }: Props
         <TextField label="Currency (3-letter code)" value={settings.currency} onChange={(v) => set({ currency: v.toUpperCase().slice(0, 3) })} />
       </Card>
 
-      <Card title="Diamond price table">
+      <Card title="Lab-grown diamonds">
+        <Text style={local.help}>One price per carat for all small lab-grown stones.</Text>
+        <View style={local.pair}>
+          <NumberField label="Price per carat" value={d.labPricePerCarat} onChange={(v) => setDiamonds({ labPricePerCarat: v })} suffix={cur} />
+          <View style={{ width: 10 }} />
+          <NumberField label="Up to size" value={d.labMaxCarat} onChange={(v) => setDiamonds({ labMaxCarat: v })} suffix="ct" />
+        </View>
+      </Card>
+
+      <Card title="Natural diamonds">
         <Text style={local.help}>
-          Cost per carat by stone size. These are starting values only – replace them with your supplier prices.
+          Price per carat rises evenly from the smallest size to the largest. Stones in between are priced on that scale.
         </Text>
-        <Segmented<DiamondOrigin>
-          options={[
-            { value: 'natural', label: 'Natural' },
-            { value: 'lab', label: 'Lab-grown' },
-          ]}
-          value={origin}
-          onChange={setOrigin}
-        />
-        {SIZE_BANDS.map((_, i) => (
-          <NumberField
-            key={`${origin}-${i}`}
-            label={bandLabel(i)}
-            value={settings.priceTable[origin][i] ?? 0}
-            onChange={(v) => setBand(i, v)}
-            suffix={`${cur}/ct`}
-          />
-        ))}
+        <View style={local.pair}>
+          <NumberField label="Smallest size" value={d.naturalMinCarat} onChange={(v) => setDiamonds({ naturalMinCarat: v })} suffix="ct" />
+          <View style={{ width: 10 }} />
+          <NumberField label="Price per carat" value={d.naturalMinPrice} onChange={(v) => setDiamonds({ naturalMinPrice: v })} suffix={cur} />
+        </View>
+        <View style={local.pair}>
+          <NumberField label="Largest size" value={d.naturalMaxCarat} onChange={(v) => setDiamonds({ naturalMaxCarat: v })} suffix="ct" />
+          <View style={{ width: 10 }} />
+          <NumberField label="Price per carat" value={d.naturalMaxPrice} onChange={(v) => setDiamonds({ naturalMaxPrice: v })} suffix={cur} />
+        </View>
       </Card>
 
       <Card title="Manual spot price">
@@ -104,7 +102,7 @@ export function SettingsScreen({ settings, onChange, spot, onManualSpot }: Props
         label="Reset all settings to defaults"
         kind="danger"
         onPress={() =>
-          Alert.alert('Reset settings?', 'Markups, costs and the diamond price table go back to the defaults.', [
+          Alert.alert('Reset settings?', 'Markups, costs and diamond prices go back to the defaults.', [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Reset', style: 'destructive', onPress: () => onChange(DEFAULT_SETTINGS) },
           ])

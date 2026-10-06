@@ -152,10 +152,10 @@ export function QuoteScreen({ settings, spot, refreshing, spotError, onRefresh }
                 <NumberField label="Quantity" value={stone.quantity} onChange={(v) => updateStone(stone.key, { quantity: Math.round(v) })} />
               </View>
               <NumberField
-                label={`Price per carat (blank = price table: ${stone.origin ? fmt(line.pricePerCarat) : 'choose type'})`}
+                label={`Price per carat (blank = standard: ${stone.origin ? fmt(line.pricePerCarat) : 'choose type'})`}
                 value={stone.pricePerCaratOverride ?? 0}
                 onChange={(v) => updateStone(stone.key, { pricePerCaratOverride: v > 0 ? v : null })}
-                placeholder="Use price table"
+                placeholder="Use standard price"
               />
               <Row label={`${line.totalCarat.toFixed(2)}ct total`} value={fmt(line.cost)} />
             </View>
