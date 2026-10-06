@@ -330,6 +330,7 @@ let q = blankQuote();
 
 const $ = (id) => document.getElementById(id);
 const num = (s) => { const n = parseFloat(String(s).replace(/[^0-9.]/g, '')); return Number.isFinite(n) ? n : 0; };
+const fmtCt = (v) => (v > 0 ? String(Math.round(v * 10000) / 10000) : '');
 const fmt = (v, dp = 2) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', minimumFractionDigits: dp, maximumFractionDigits: dp }).format(v || 0);
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
@@ -364,7 +365,7 @@ function calc() {
     else {
       const max = s.origin === 'lab' ? settings.labMax : settings.natMaxCt;
       if (!(s.override > 0) && s.ct > max) problems.push(`Diamond ${i + 1}: over ${max}ct is outside small-stone pricing. Type a price per carat for it.`);
-      if (s.ct <= 0) problems.push(`Diamond ${i + 1}: enter the carat size.`);
+      if (s.ct <= 0) problems.push(`Diamond ${i + 1}: enter the total weight or the size of each stone.`);
       if (s.origin === 'lab') lab += cost; else nat += cost;
     }
     return { rate, cost };
@@ -417,26 +418,39 @@ function renderStones() {
   const box = $('stones');
   box.innerHTML = '';
   q.stones.forEach((s, i) => {
+    if (s.total == null) s.total = s.ct * s.qty;
     const el = document.createElement('div');
     el.className = 'stone ' + (s.origin || 'unset');
     el.innerHTML = `
-      <div class="stone-head"><b>Diamond ${i + 1}</b><button type="button" class="link red" data-act="remove">Remove</button></div>
-      <div class="ask">Is this diamond lab-grown or natural?</div>
+      <div class="stone-head"><b>Diamond group ${i + 1}</b><button type="button" class="link red" data-act="remove">Remove</button></div>
+      <div class="ask">Are these diamonds lab-grown or natural?</div>
       <div class="seg" role="group" aria-label="Diamond ${i + 1} type">
         <button type="button" data-v="lab" aria-pressed="${s.origin === 'lab'}">Lab-grown</button>
         <button type="button" data-v="natural" aria-pressed="${s.origin === 'natural'}">Natural</button>
       </div>
       <div class="pair">
-        <div class="field"><label for="ct-${s.key}">Size each</label><div class="input"><input id="ct-${s.key}" inputmode="decimal" placeholder="0.00" data-f="ct" value="${s.ct || ''}"><span class="suf">ct</span></div></div>
-        <div class="field"><label for="qty-${s.key}">Quantity</label><div class="input"><input id="qty-${s.key}" inputmode="numeric" placeholder="1" data-f="qty" value="${s.qty || ''}"></div></div>
+        <div class="field"><label for="qty-${s.key}">Number of stones</label><div class="input"><input id="qty-${s.key}" inputmode="numeric" placeholder="1" data-f="qty" value="${s.qty || ''}"></div></div>
+        <div class="field"><label for="tot-${s.key}">Total weight</label><div class="input"><input id="tot-${s.key}" inputmode="decimal" placeholder="0.00" data-f="total" value="${fmtCt(s.ct * s.qty)}"><span class="suf">ct</span></div></div>
       </div>
+      <div class="field"><label for="ct-${s.key}">Size of each stone <span class="rate">(worked out from the total, or type it)</span></label><div class="input"><input id="ct-${s.key}" inputmode="decimal" placeholder="0.00" data-f="ct" value="${fmtCt(s.ct)}"><span class="suf">ct each</span></div></div>
       <div class="field"><label for="ov-${s.key}">Own price per carat <span class="rate">(leave blank for standard)</span></label><div class="input"><input id="ov-${s.key}" inputmode="decimal" placeholder="Standard" data-f="override" value="${s.override || ''}"><span class="suf">AUD</span></div></div>
       <div class="line"><span class="rate" data-out="rate"></span><b data-out="cost"></b></div>`;
     el.querySelector('[data-act="remove"]').onclick = () => { q.stones.splice(i, 1); renderStones(); update(); };
     el.querySelectorAll('.seg button').forEach((b) => b.onclick = () => { s.origin = b.dataset.v; renderStones(); update(); });
+    const totIn = el.querySelector('[data-f="total"]'), eachIn = el.querySelector('[data-f="ct"]');
     el.querySelectorAll('input[data-f]').forEach((inp) => inp.oninput = () => {
-      const v = num(inp.value);
-      s[inp.dataset.f] = inp.dataset.f === 'qty' ? Math.round(v) : v;
+      const v = num(inp.value), f = inp.dataset.f;
+      if (f === 'qty') {
+        s.qty = Math.round(v);
+        // Keep whichever weight was typed last and work out the other one.
+        if (s.lock === 'total' && s.qty > 0) { s.ct = s.total / s.qty; eachIn.value = fmtCt(s.ct); }
+        else { totIn.value = fmtCt(s.ct * s.qty); }
+      } else if (f === 'total') {
+        s.lock = 'total'; s.total = v;
+        s.ct = s.qty > 0 ? v / s.qty : 0; eachIn.value = fmtCt(s.ct);
+      } else if (f === 'ct') {
+        s.lock = 'each'; s.ct = v; s.total = v * s.qty; totIn.value = fmtCt(s.total);
+      } else s[f] = v;
       update();
     });
     box.appendChild(el);
@@ -450,7 +464,7 @@ function update() {
   $('metal-cost').textContent = fmt(r.metalCost);
   document.querySelectorAll('#stones .stone').forEach((el, i) => {
     const s = q.stones[i], l = r.lines[i];
-    el.querySelector('[data-out="rate"]').textContent = s.origin ? `${fmt(l.rate)}/ct × ${(s.ct * s.qty).toFixed(3)}ct` : 'Choose lab-grown or natural';
+    el.querySelector('[data-out="rate"]').textContent = s.origin ? `${s.qty} × ${s.ct.toFixed(3)}ct each at ${fmt(l.rate)}/ct` : 'Choose lab-grown or natural';
     el.querySelector('[data-out="cost"]').textContent = fmt(l.cost);
   });
   $('setting-label').textContent = `Setting (${r.count} × ${fmt(settings.settingPerStone)})`;
@@ -482,7 +496,7 @@ function quoteText(r) {
     `Date: ${new Date().toLocaleDateString('en-AU')}`,
     '',
     `${r.metal.label}, ${q.grams} g`,
-    ...q.stones.map((s, i) => `Diamond ${i + 1}: ${s.qty} × ${s.ct}ct ${s.origin === 'lab' ? 'lab-grown' : 'natural'}`),
+    ...q.stones.map((s, i) => `Diamonds: ${s.qty} × ${s.ct.toFixed(3)}ct ${s.origin === 'lab' ? 'lab-grown' : 'natural'} (${fmtCt(s.ct * s.qty)}ct total)`),
     '',
     `Price: ${fmt(r.rrp)} inc. GST`,
   ];
@@ -564,7 +578,7 @@ function showTab(t) {
 document.querySelectorAll('.tabs button').forEach((b) => b.onclick = () => showTab(b.dataset.tab));
 [['q-customer', 'customer', false], ['q-desc', 'desc', false], ['q-grams', 'grams', true], ['q-labour', 'labour', true], ['q-other', 'other', true]]
   .forEach(([id, key, isNum]) => $(id).oninput = (e) => { q[key] = isNum ? num(e.target.value) : e.target.value; update(); });
-$('add-stone').onclick = () => { q.stones.push({ key: nextKey++, origin: null, ct: 0, qty: 1, override: 0 }); renderStones(); update(); };
+$('add-stone').onclick = () => { q.stones.push({ key: nextKey++, origin: null, ct: 0, qty: 1, total: 0, lock: 'total', override: 0 }); renderStones(); update(); };
 $('new-quote').onclick = () => { q = blankQuote(); fillQuoteInputs(); renderMetalChips(); renderStones(); update(); window.scrollTo({ top: 0 }); };
 $('copy-quote').onclick = () => {
   const text = quoteText(calc());
