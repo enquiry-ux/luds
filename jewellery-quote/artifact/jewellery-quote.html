@@ -236,10 +236,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
       <div class="card-head"><h2>Today's spot price</h2></div>
       <p class="sub">Claude updates this every morning. If it looks wrong, enter the price per troy ounce in AUD from ABC Bullion.</p>
       <div class="field"><label for="m-xau">Gold per oz</label><div class="input"><input id="m-xau" inputmode="decimal"><span class="suf">AUD</span></div></div>
-      <div class="pair">
-        <div class="field"><label for="m-xpt">Platinum per oz</label><div class="input"><input id="m-xpt" inputmode="decimal"><span class="suf">AUD</span></div></div>
-        <div class="field"><label for="m-xag">Silver per oz</label><div class="input"><input id="m-xag" inputmode="decimal"><span class="suf">AUD</span></div></div>
-      </div>
+      <div class="field"><label for="m-xpt">Platinum per oz</label><div class="input"><input id="m-xpt" inputmode="decimal"><span class="suf">AUD</span></div></div>
       <button type="button" class="btn" id="save-spot">Use these prices</button>
       <span class="toast" id="spot-msg" role="status"></span>
     </div>
@@ -310,7 +307,6 @@ const METALS = [
   { id: '9k', label: '9ct gold', sym: 'XAU', purity: 0.375 },
   { id: '18k', label: '18ct gold', sym: 'XAU', purity: 0.75 },
   { id: 'pt950', label: 'Platinum 950', sym: 'XPT', purity: 0.95 },
-  { id: 'ag925', label: 'Silver 925', sym: 'XAG', purity: 0.925 },
 ];
 const DEFAULTS = {
   labPrice: 250, labMax: 0.3,
@@ -320,7 +316,7 @@ const DEFAULTS = {
 };
 
 let settings = { ...DEFAULTS };
-let spot = null; // {XAU, XPT, XAG (AUD/oz), updatedAt, source}
+let spot = null; // {XAU, XPT (AUD/oz), updatedAt, source}
 let db = null;
 let saved = [];
 let nextKey = 1;
@@ -398,7 +394,7 @@ function renderSpot() {
   if (!today && ageDays > 1.5) pill.classList.add('stale');
   $('spot-age').textContent = today ? 'Updated today' : `Updated ${d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}`;
   $('spot-src').textContent = `${d.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })} · ${spot.source || 'manual'}`;
-  ['XAU', 'XPT', 'XAG'].forEach((k) => { const el = $('m-' + k.toLowerCase()); if (document.activeElement !== el) el.placeholder = spot[k] ? spot[k].toFixed(2) : ''; });
+  ['XAU', 'XPT'].forEach((k) => { const el = $('m-' + k.toLowerCase()); if (document.activeElement !== el) el.placeholder = spot[k] ? spot[k].toFixed(2) : ''; });
 }
 
 function renderMetalChips() {
@@ -604,11 +600,11 @@ $('reset-settings').onclick = () => {
 };
 $('save-spot').onclick = async () => {
   const next = { ...(spot || {}) };
-  [['XAU', 'm-xau'], ['XPT', 'm-xpt'], ['XAG', 'm-xag']].forEach(([k, id]) => { const v = num($(id).value); if (v > 0) next[k] = v; });
+  [['XAU', 'm-xau'], ['XPT', 'm-xpt']].forEach(([k, id]) => { const v = num($(id).value); if (v > 0) next[k] = v; });
   if (!next.XAU) { say('spot-msg', 'Enter the gold price per ounce first.'); return; }
   next.updatedAt = new Date().toISOString(); next.source = 'entered manually';
   spot = next; store.set('jq-spot', spot);
-  ['m-xau', 'm-xpt', 'm-xag'].forEach((id) => { $(id).value = ''; });
+  ['m-xau', 'm-xpt'].forEach((id) => { $(id).value = ''; });
   renderSpot(); update();
   if (db) { try { await db.doc('prices/spot').set(next); say('spot-msg', 'Saved. Everyone now uses these prices.'); } catch { say('spot-msg', 'Saved on this device only.'); } }
   else say('spot-msg', 'Saved on this device.');
