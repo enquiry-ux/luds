@@ -14,11 +14,7 @@ export type MetalOption = {
 
 export const METAL_OPTIONS: MetalOption[] = [
   { id: '9k', label: '9ct gold', symbol: 'XAU', purity: 0.375 },
-  { id: '10k', label: '10ct gold', symbol: 'XAU', purity: 0.417 },
-  { id: '14k', label: '14ct gold', symbol: 'XAU', purity: 0.585 },
   { id: '18k', label: '18ct gold', symbol: 'XAU', purity: 0.75 },
-  { id: '22k', label: '22ct gold', symbol: 'XAU', purity: 0.916 },
-  { id: '24k', label: '24ct gold', symbol: 'XAU', purity: 0.999 },
   { id: 'pt950', label: 'Platinum 950', symbol: 'XPT', purity: 0.95 },
   { id: 'ag925', label: 'Sterling silver 925', symbol: 'XAG', purity: 0.925 },
 ];
@@ -132,7 +128,7 @@ export function roundUp(value: number, step: number): number {
 
 export function calculateQuote(input: QuoteInput, spot: SpotPrices, settings: Settings): QuoteResult {
   const problems: string[] = [];
-  const metal = METAL_OPTIONS.find((m) => m.id === input.metalId) ?? METAL_OPTIONS[3];
+  const metal = METAL_OPTIONS.find((m) => m.id === input.metalId) ?? METAL_OPTIONS[1];
 
   const spotPerOunce = spot[metal.symbol] ?? null;
   const pricePerGramPure = spotPerOunce != null ? spotPerOunce / GRAMS_PER_TROY_OUNCE : null;

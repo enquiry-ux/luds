@@ -3,7 +3,7 @@
 An iPhone app (built with Expo / React Native) for quoting jewellery pieces.
 
 - **Updates spot prices every day.** Gold, platinum and silver refresh when the app opens and again when it comes back to the foreground on a new day. There is also a Refresh button. Prices come from gold-api.com (USD per troy ounce) and are converted to AUD with the ECB rate from frankfurter.app. Neither needs an API key. If the feed is down, enter prices manually under Settings → Manual spot price.
-- **Metal cost:** finished weight (g) × spot price per gram × purity (9ct, 10ct, 14ct, 18ct, 22ct, 24ct, Pt950, Ag925) × (1 + loss %).
+- **Metal cost:** finished weight (g) × spot price per gram × purity (9ct or 18ct gold, Pt950, Ag925) × (1 + loss %).
 - **Diamonds:** asks for each stone whether it is **lab-grown or natural**, then takes the carat and quantity. The price per carat comes from your price table by size band, or you can type a price for that stone. The quote can't be shared until every stone has been marked lab or natural.
 - **Cost price:** metal + diamonds + setting (per stone) + labour + other costs.
 - **Recommended retail:** cost × markup (separate markups for metal/labour, natural and lab), plus 10% GST, rounded up to the nearest $10. These can all be changed in Settings.
