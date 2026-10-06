@@ -169,6 +169,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
         <div class="karat"><div class="k">18ct / g</div><div class="v" id="g18">—</div></div>
         <div class="karat"><div class="k">9ct / g</div><div class="v" id="g9">—</div></div>
       </div>
+      <p class="sub" id="g-note"></p>
       <div class="stamp"><span class="pill" id="spot-pill"><i></i><span id="spot-age">No price yet</span></span><span id="spot-src"></span></div>
     </div>
 
@@ -242,6 +243,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
     </div>
 
     <div class="card">
+      <div class="card-head"><h2>Your gold price</h2></div>
+      <p class="sub">What you pay for 18ct per gram today. The app works out your premium over spot and keeps it as the spot price moves each day. 9ct uses the same premium.</p>
+      <div class="field"><label for="d-gold18">18ct price per gram</label><div class="input"><input id="d-gold18" inputmode="decimal"><span class="suf">AUD/g</span></div></div>
+      <div class="field"><label for="d-prem">Premium over spot</label><div class="input"><input id="d-prem" inputmode="decimal" data-set="goldPremiumPct"><span class="suf">%</span></div></div>
+    </div>
+
+    <div class="card">
       <div class="card-head"><h2>Lab-grown diamonds</h2></div>
       <div class="pair">
         <div class="field"><label for="d-labPrice">Price per carat</label><div class="input"><input id="d-labPrice" inputmode="decimal" data-set="labPrice"><span class="suf">AUD</span></div></div>
@@ -311,7 +319,7 @@ const METALS = [
 const DEFAULTS = {
   labPrice: 250, labMax: 0.3,
   natMinCt: 0.01, natMinPrice: 1200, natMaxCt: 0.1, natMaxPrice: 1700,
-  lossPct: 8, settingPerStone: 15,
+  lossPct: 8, settingPerStone: 15, goldPremiumPct: 56.1036,
   mkMetal: 2.2, mkNat: 1.8, mkLab: 2.5, gstPct: 10, roundTo: 10,
 };
 
@@ -348,7 +356,8 @@ function calc() {
   const problems = [];
   const metal = METALS.find((m) => m.id === q.metalId) || METALS[1];
   const perOz = spot && spot[metal.sym];
-  const perGramPure = perOz ? perOz / OZ : null;
+  const prem = metal.sym === 'XAU' ? 1 + settings.goldPremiumPct / 100 : 1;
+  const perGramPure = perOz ? perOz / OZ * prem : null;
   if (!perGramPure && q.grams > 0) problems.push(`No ${metal.sym === 'XAU' ? 'gold' : metal.label} price yet. Enter today's price in Settings.`);
   const metalCost = (perGramPure || 0) * metal.purity * q.grams * (1 + settings.lossPct / 100);
   let nat = 0, lab = 0, count = 0;
@@ -383,8 +392,11 @@ function calc() {
 function renderSpot() {
   const x = spot && spot.XAU;
   $('spot-oz').textContent = x ? fmt(x) : '—';
-  $('g18').textContent = x ? fmt(x / OZ * 0.75) : '—';
-  $('g9').textContent = x ? fmt(x / OZ * 0.375) : '—';
+  const gp = 1 + settings.goldPremiumPct / 100;
+  $('g18').textContent = x ? fmt(x / OZ * 0.75 * gp) : '—';
+  $('g9').textContent = x ? fmt(x / OZ * 0.375 * gp) : '—';
+  $('g-note').textContent = x ? `Your price: spot ${fmt(x / OZ * 0.75)}/g for 18ct + ${settings.goldPremiumPct.toFixed(1)}% premium` : '';
+  syncGold18();
   const pill = $('spot-pill');
   pill.classList.remove('stale', 'none');
   if (!x || !spot.updatedAt) { pill.classList.add('none'); $('spot-age').textContent = 'No price yet'; $('spot-src').textContent = 'Enter it in Settings.'; return; }
@@ -530,6 +542,11 @@ function renderSaved() {
 }
 
 /* ---------- settings ---------- */
+function spot18() { return spot && spot.XAU ? spot.XAU / OZ * 0.75 : 0; }
+function syncGold18() {
+  const el = $('d-gold18');
+  if (document.activeElement !== el) el.value = spot18() ? (spot18() * (1 + settings.goldPremiumPct / 100)).toFixed(2) : '';
+}
 function fillSettingsInputs() {
   document.querySelectorAll('input[data-set]').forEach((inp) => {
     if (document.activeElement !== inp) inp.value = settings[inp.dataset.set];
@@ -590,13 +607,20 @@ $('save-quote').onclick = async () => {
   } catch { say('quote-msg', 'Could not save the quote. Try again in a moment.'); }
 };
 document.querySelectorAll('input[data-set]').forEach((inp) => inp.oninput = () => {
-  settings[inp.dataset.set] = num(inp.value); update(); saveSettingsSoon();
+  settings[inp.dataset.set] = num(inp.value); renderSpot(); update(); saveSettingsSoon();
 });
+$('d-gold18').oninput = (e) => {
+  const v = num(e.target.value), base = spot18();
+  if (!(v > 0) || !base) return;
+  settings.goldPremiumPct = Math.round((v / base - 1) * 100 * 10000) / 10000;
+  $('d-prem').value = settings.goldPremiumPct;
+  renderSpot(); update(); saveSettingsSoon();
+};
 $('reset-settings').onclick = () => {
   const b = $('reset-settings');
   if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Tap again to reset for everyone'; setTimeout(() => { b.dataset.armed = ''; b.textContent = 'Reset settings to defaults'; }, 3500); return; }
   b.dataset.armed = ''; b.textContent = 'Reset settings to defaults';
-  settings = { ...DEFAULTS }; fillSettingsInputs(); update(); saveSettingsSoon();
+  settings = { ...DEFAULTS }; fillSettingsInputs(); renderSpot(); update(); saveSettingsSoon();
 };
 $('save-spot').onclick = async () => {
   const next = { ...(spot || {}) };
@@ -628,7 +652,7 @@ showTab(store.get('jq-tab') || 'quote');
   db.doc('config/settings').onSnapshot((snap) => {
     if (!snap.exists) return;
     const { updatedAt, ...rest } = snap.data();
-    settings = { ...DEFAULTS, ...rest }; store.set('jq-settings', settings); fillSettingsInputs(); update();
+    settings = { ...DEFAULTS, ...rest }; store.set('jq-settings', settings); fillSettingsInputs(); renderSpot(); update();
   });
   db.collection('quotes').orderBy('savedAt', 'desc').limit(100).onSnapshot((snap) => { saved = snap.docs; renderSaved(); }, () => {});
   renderSaved();
