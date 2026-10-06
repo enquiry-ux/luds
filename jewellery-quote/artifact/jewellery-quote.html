@@ -62,7 +62,7 @@ header.top .eyebrow{font-size:11px;font-weight:600;letter-spacing:.14em;text-tra
 .spot{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:baseline}
 .spot .big{font-family:var(--f-num);font-size:26px;font-weight:500;letter-spacing:-.01em}
 .spot .unit{font-size:13px;color:var(--muted)}
-.karats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.karats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .karat{background:var(--inset);border:1px solid var(--ring);border-radius:10px;padding:8px 10px}
 .karat .k{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .karat .v{font-family:var(--f-num);font-size:15px}
@@ -140,7 +140,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
 
 .panel{display:flex;flex-direction:column;gap:14px}
 .confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px}
-@media (max-width:380px){.karats{grid-template-columns:1fr 1fr}.pair{grid-template-columns:1fr}}
+@media (max-width:380px){.pair{grid-template-columns:1fr}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 
@@ -163,10 +163,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
     <div class="card" aria-labelledby="spot-h">
       <div class="card-head"><h2 id="spot-h">Gold today</h2><span class="sub">AUD</span></div>
       <div class="spot">
-        <div><span class="big" id="spot-oz">—</span> <span class="unit">per oz, 24ct</span></div>
+        <div><span class="big" id="spot-oz">—</span> <span class="unit">spot per oz</span></div>
       </div>
       <div class="karats">
-        <div class="karat"><div class="k">24ct / g</div><div class="v" id="g24">—</div></div>
         <div class="karat"><div class="k">18ct / g</div><div class="v" id="g18">—</div></div>
         <div class="karat"><div class="k">9ct / g</div><div class="v" id="g9">—</div></div>
       </div>
@@ -388,7 +387,6 @@ function calc() {
 function renderSpot() {
   const x = spot && spot.XAU;
   $('spot-oz').textContent = x ? fmt(x) : '—';
-  $('g24').textContent = x ? fmt(x / OZ * 0.999) : '—';
   $('g18').textContent = x ? fmt(x / OZ * 0.75) : '—';
   $('g9').textContent = x ? fmt(x / OZ * 0.375) : '—';
   const pill = $('spot-pill');
