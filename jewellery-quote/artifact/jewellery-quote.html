@@ -193,7 +193,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
 
     <div class="card">
       <div class="card-head"><h2>Labour & extras</h2></div>
-      <div class="field"><label for="q-labour">Labour / manufacturing</label><div class="input"><input id="q-labour" inputmode="decimal" placeholder="0"><span class="suf">AUD</span></div></div>
+      <div class="line"><span id="labour-label">Labour</span><b id="labour-cost">$0.00</b></div>
       <div class="field"><label for="q-other">Other costs (findings, engraving, freight)</label><div class="input"><input id="q-other" inputmode="decimal" placeholder="0"><span class="suf">AUD</span></div></div>
       <div class="line"><span id="setting-label">Setting</span><b id="setting-cost">$0.00</b></div>
     </div>
@@ -268,6 +268,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
         <div class="field"><label for="d-loss">Metal loss</label><div class="input"><input id="d-loss" inputmode="decimal" data-set="lossPct"><span class="suf">%</span></div></div>
         <div class="field"><label for="d-setting">Setting per stone</label><div class="input"><input id="d-setting" inputmode="decimal" data-set="settingPerStone"><span class="suf">AUD</span></div></div>
       </div>
+      <div class="field"><label for="d-labour">Labour per gram</label><div class="input"><input id="d-labour" inputmode="decimal" data-set="labourPerGram"><span class="suf">AUD/g</span></div></div>
     </div>
 
     <div class="card">
@@ -311,7 +312,7 @@ const METALS = [
 const DEFAULTS = {
   labPrice: 250, labMax: 0.3,
   natMinCt: 0.01, natMinPrice: 1200, natMaxCt: 0.1, natMaxPrice: 1700,
-  lossPct: 8, settingPerStone: 15,
+  lossPct: 8, settingPerStone: 15, labourPerGram: 78,
   mkMetal: 2.2, mkNat: 1.8, mkLab: 2.5, gstPct: 10, roundTo: 10,
 };
 
@@ -320,7 +321,7 @@ let spot = null; // {XAU, XPT (AUD/oz), updatedAt, source}
 let db = null;
 let saved = [];
 let nextKey = 1;
-const blankQuote = () => ({ customer: '', desc: '', metalId: '18k', grams: 0, labour: 0, other: 0, stones: [] });
+const blankQuote = () => ({ customer: '', desc: '', metalId: '18k', grams: 0, other: 0, stones: [] });
 let q = blankQuote();
 
 const $ = (id) => document.getElementById(id);
@@ -366,7 +367,8 @@ function calc() {
     return { rate, cost };
   });
   const setting = count * settings.settingPerStone;
-  const work = setting + q.labour + q.other;
+  const labour = q.grams * settings.labourPerGram;
+  const work = setting + labour + q.other;
   const metalWork = metalCost + work;
   const cost = metalWork + nat + lab;
   const ex = metalWork * settings.mkMetal + nat * settings.mkNat + lab * settings.mkLab;
@@ -376,7 +378,7 @@ function calc() {
   const rrp = step > 0 ? Math.ceil(inc / step - 1e-9) * step : Math.round(inc * 100) / 100;
   const rrpEx = rrp / (1 + settings.gstPct / 100);
   const margin = rrpEx > 0 ? (rrpEx - cost) / rrpEx * 100 : 0;
-  return { metal, perGramPure, metalCost, lines, nat, lab, setting, work, cost, ex, gst, rrp, margin, problems, count };
+  return { metal, perGramPure, metalCost, labour, lines, nat, lab, setting, work, cost, ex, gst, rrp, margin, problems, count };
 }
 
 /* ---------- render ---------- */
@@ -467,6 +469,8 @@ function update() {
     el.querySelector('[data-out="rate"]').textContent = s.origin ? `${s.qty} × ${s.ct.toFixed(3)}ct each at ${fmt(l.rate)}/ct` : 'Choose lab-grown or natural';
     el.querySelector('[data-out="cost"]').textContent = fmt(l.cost);
   });
+  $('labour-label').textContent = `Labour (${q.grams || 0} g × ${fmt(settings.labourPerGram)}/g)`;
+  $('labour-cost').textContent = fmt(r.labour);
   $('setting-label').textContent = `Setting (${r.count} × ${fmt(settings.settingPerStone)})`;
   $('setting-cost').textContent = fmt(r.setting);
   $('s-metal').textContent = fmt(r.metalCost);
@@ -558,7 +562,6 @@ function fillQuoteInputs() {
   $('q-customer').value = q.customer || '';
   $('q-desc').value = q.desc || '';
   $('q-grams').value = q.grams || '';
-  $('q-labour').value = q.labour || '';
   $('q-other').value = q.other || '';
 }
 
@@ -578,7 +581,7 @@ function showTab(t) {
 
 /* ---------- wire up ---------- */
 document.querySelectorAll('.tabs button').forEach((b) => b.onclick = () => showTab(b.dataset.tab));
-[['q-customer', 'customer', false], ['q-desc', 'desc', false], ['q-grams', 'grams', true], ['q-labour', 'labour', true], ['q-other', 'other', true]]
+[['q-customer', 'customer', false], ['q-desc', 'desc', false], ['q-grams', 'grams', true], ['q-other', 'other', true]]
   .forEach(([id, key, isNum]) => $(id).oninput = (e) => { q[key] = isNum ? num(e.target.value) : e.target.value; update(); });
 $('add-stone').onclick = () => { q.stones.push({ key: nextKey++, origin: null, ct: 0, qty: 1, total: 0, lock: 'total', override: 0 }); renderStones(); update(); };
 $('new-quote').onclick = () => { q = blankQuote(); fillQuoteInputs(); renderMetalChips(); renderStones(); update(); window.scrollTo({ top: 0 }); };
